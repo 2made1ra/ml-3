@@ -15,3 +15,6 @@
 | **v13** | **TabLDM «из коробки» (n_estimators 16, enhance), без обучения весов** | **TabLDM** | **0.3933** | **0.3246** | **runs/v13** |
 | v14 | TabM «из коробки» (k 32, 2×512, PLE-эмбеддинги), lr 2e-3, wd 3e-4 | TabM | 0.2886 | 0.3009 | runs/v14 |
 | v15 | H1: lr 9e-3, wd 3e-5 из Optuna (`tune-tabm-lr`) | TabM | 0.3542 | 0.3188 | runs/v15 |
+| v16 | H2: k 1 (lr 9e-3, wd 3e-5 как в v15) | TabM | 0.2881 | 0.2895 | runs/v16 |
+| v17 | H2: k 8 (lr 9e-3, wd 3e-5 как в v15) | TabM | 0.2934 | 0.2624 | runs/v17 |
+| v18 | H2: k 64 (lr 9e-3, wd 3e-5 как в v15) | TabM | 0.2830 | 0.2924 | runs/v18 |
