@@ -35,18 +35,23 @@ Applies to chat, agent messages, instruction files and code.
 1. `/new-lab N`: assignment analysis via `/plan-lab` (transcript, interview, stage plan `task/task.md`), scaffold, environment. `task.md` drives all later steps. `/kva-sync` mirrors it onto the kvatask board: an epic per lab, a task per stage.
 2. `/code-lab <goal>`: the main model decides and writes a spec, `lab-coder` writes code, the main model verifies.
 3. `/tune` (when needed): Optuna study of nuisance hyperparameters, planned by the Google Tuning Playbook.
-4. `/train`: time estimate, machine choice, commands. The user starts training.
+4. `/train`: time estimate, machine choice, the command. Then it asks who starts the run: the user or Claude.
 5. Training writes `runs/vN/` (committed) and a run in the machine's local MLflow.
 6. `/log-iteration`: iteration log. The notebook plots from `runs/`.
 7. `/write-conclusion` → `/lab-review` → `/pack-submission`; `/prep-defense` before the defense.
 
 `runs/*/summary.json` is the source of truth for numbers. MLflow is only a dashboard. The notebook is the submission: it reads `runs/` and does not retrain.
 
+Local files are the source of truth for tasks: `task/task.md` (stages, their content and status) and `task/assignment.md`. The kvatask board is only a view for the user:
+- Never take a plan, a task's content or a status from the board.
+- Nothing goes onto the board unless it is in `task.md` first.
+- On a mismatch `task.md` wins. If the user confirms the board is right, change `task.md` first, then run `/kva-sync`.
+
 ## Roles
 
 - **Main model**: decisions (task analysis, approach, experiments), specs, code review, result analysis, conclusions. Does not write `src/` code, except one-line fixes after review.
 - **`lab-coder` subagent (Sonnet, medium effort)**: writes code from a spec. Defined in `.claude/agents/lab-coder.md`.
-- **User**: runs full training, edits conclusions. Claude runs only smoke and `--benchmark`.
+- **User**: edits conclusions; chooses who starts each full training or tuning run. Claude gives the command and asks; it never starts a full run without that answer. Claude starts runs only on the Mac, in the background; PC runs are the user's. Smoke and `--benchmark` Claude runs itself.
 - Numbers in conclusions and reports come only from `runs/`, cell outputs or MLflow. Never invent them.
 
 ## Layout

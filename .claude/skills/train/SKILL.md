@@ -1,12 +1,12 @@
 ---
 name: train
-description: Prepare a full training run of an iteration — estimate Mac time via --benchmark, recommend a machine (Mac M4 or PC with RTX 4090) and give exact commands. Use when code is ready to train or the user asks where to train or how long it takes.
+description: Prepare a full training run of an iteration — estimate Mac time via --benchmark, recommend a machine (Mac M4 or PC with RTX 4090), give exact commands and ask who starts the run (the user, or Claude on the Mac in the background). Use when code is ready to train or the user asks where to train or how long it takes.
 argument-hint: "[lab-N] [vN] [mac|pc]"
 ---
 
 # /train
 
-The user always starts training, with the same command on either machine. Output: `runs/vN/` (committed) and a run in that machine's local MLflow.
+Training uses the same command on either machine. The user chooses who starts it (section 3). Output: `runs/vN/` (committed) and a run in that machine's local MLflow.
 
 ## 1. Prepare
 
@@ -37,7 +37,11 @@ From `lab-N/`.
 
 **Mac:** `uv run python -m src.train --run vN`, then `/log-iteration`.
 
-**PC:** first commit and push the code on the Mac (only with the user's consent: `feat(labN): ...`). Then on the PC:
+Show the command, then ask who starts it with one AskUserQuestion, giving the time estimate: «Запусти ты» / «Запущу сам». Never start a full run without that answer.
+- **Claude starts:** Bash from `lab-N/` with `run_in_background: true`; do not poll, the exit notification arrives on its own. Then check the exit code and `runs/vN/summary.json`, report the duration and the main val metric, and continue with `/log-iteration`. A failure → section 4.
+- **The user starts:** wait for their «готово», then `/log-iteration`.
+
+**PC** (always started by the user: Claude has no access to it): first commit and push the code on the Mac (only with the user's consent: `feat(labN): ...`). Then on the PC:
 
 ```bash
 git pull && cd lab-N && uv sync

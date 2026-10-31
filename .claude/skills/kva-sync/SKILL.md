@@ -6,7 +6,7 @@ argument-hint: "[lab-N]"
 
 # /kva-sync
 
-`task/task.md` is the source of truth. The board mirrors it so the user sees the lab's work there. Board text is a deliverable: Russian.
+`task/task.md` is the source of truth; the board is only a view for the user (rules: "Workflow" in `CLAUDE.md`). The board mirrors it so the user sees the lab's work there. Board text is a deliverable: Russian.
 
 ## 1. Preconditions
 
@@ -47,7 +47,7 @@ Every description ends with a «Подробно» block of clickable links to t
    - План этапов: `lab-N/task/task.md`
    - Условие: `lab-N/task/assignment.md` and the originals in `task/`
    - Ноутбук: `lab-N/lab-N.ipynb`
-2. Each stage, in order: title = the heading without the checkbox (`Этап K. <название> — п. …, <баллы>`); description = its bullets «Требование», «В ноутбуке», «Как», «Готово, когда». «Подробно»:
+2. Each stage, in order: title = the heading without the checkbox (`Этап K. <название> — п. …, <баллы>`); description = all its bullets, with sub-bullets, except «Результаты» and «Доска» (e.g. «Требование», «Эксперименты», «В ноутбуке», «Как», «Готово, когда»). «Подробно»:
    - План этапа: `lab-N/task/task.md`, раздел «Этап K»
    - Условие: `lab-N/task/assignment.md`, пункты <номера из заголовка этапа>
    - Результаты: every `reports/iterations/vN.md` listed in the stage's «Результаты» (added as they appear)
@@ -56,7 +56,7 @@ Every description ends with a «Подробно» block of clickable links to t
 3. Status:
    - `[x]` → done.
    - `[ ]` → keep the board status, since «в работе» is set by `/code-lab`. A new task → to do.
-   - Done on the board but `[ ]` in `task.md`: report it; change neither.
+   - Done on the board but `[ ]` in `task.md`: ask the user. Stage really done → tick `task.md` first, then sync. Otherwise → reset the board status.
 4. A board task whose stage is gone from `task.md`: report it. Never delete board tasks without the user's consent.
 5. Tasks in the epic without a link in `task.md` (added by the user): list them and propose for each: a new stage via `/plan-lab`, or a one-off `/code-lab <задача>`.
 

@@ -6,7 +6,7 @@ argument-hint: "[lab-N] [study name] [what to tune or compare]"
 
 # /tune
 
-Optuna searches; the Playbook decides what to search. Code contract: "Only if the lab uses `/tune`" in `.claude/rules/training-code.md`. The user starts studies, like training.
+Optuna searches; the Playbook decides what to search. Code contract: "Only if the lab uses `/tune`" in `.claude/rules/training-code.md`. Who starts a study is the user's choice, as for training (section 3).
 
 ## 1. Plan the round
 
@@ -35,6 +35,8 @@ From `lab-N/`, on the chosen machine:
 ```bash
 uv run python -m src.tune --study <name> --trials N [--epochs E]
 ```
+
+Who starts it: ask as in `/train`, section 3 (Claude runs only on the Mac, in the background).
 
 On the PC, then: `git add runs/tune/<name>.db && git commit -m "run(labN): tune <name> — <цель раунда>" && git push`. Re-running with the same `--study` resumes it.
 
