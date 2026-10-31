@@ -15,13 +15,23 @@ argument-hint: "[lab-N]"
 
 ## 2. Board API
 
-Not recorded yet. On the first run, find the kvatask tools (ToolSearch `kvatask`) and learn how to: create an epic; create a task linked to an epic; update a task's title, description, status and due date; list an epic's tasks. Record the tool names, required fields and status values here, replacing this paragraph, and fill the board column below.
+Tools are deferred: load them with ToolSearch `select:mcp__kvatask__<name>,...`. The key is bound to project `DL` (ml-3): pass `project_prefix: "DL"`. IDs are `DL-<n>`. Descriptions are Markdown.
+
+| Action | Tool and fields |
+| --- | --- |
+| Create the epic | `create_task`: `project_prefix`, `title`, `type: "epic"`, `status: "todo"`, `due_date: "YYYY-MM-DD"`, `description` |
+| Create stage tasks | `bulk_create_tasks`: `project_prefix`, `tasks: [{title, type: "task", status: "todo", description}]`; returns `display_id` per item, in order |
+| Link a task to the epic | `create_task_link`: `task_id: <epic>`, `linked_task_id: <task>`, `link_type: "subtask"` (one call per task; `create_task` has no parent field) |
+| Update title, description, status, due date | `update_task`: `task_id` + changed fields only (`due_date: "null"` clears); many at once: `bulk_update_tasks` |
+| List the epic's tasks | `list_task_links`: `task_id: <epic>` → `subtask → DL-n: <title>` lines; details: `bulk_get_tasks` |
+
+Type codes: `epic`, `task`. A wrong code returns `ERR_INVALID_*` with `valid_codes`.
 
 | `task.md` | Board status |
 | --- | --- |
-| new stage | <to do> |
-| work on the stage started (`/code-lab`) | <in progress> |
-| `### [x]` | <done> |
+| new stage | `todo` |
+| work on the stage started (`/code-lab`) | `in_progress` |
+| `### [x]` | `done` |
 
 ## 3. Links in task.md
 
