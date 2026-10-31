@@ -588,6 +588,17 @@ def benchmark(cfg: Config, k: int) -> None:
     )
 
 
+def apply_set(cfg: Config, items: list[str]) -> Config:
+    """Возвращает cfg с переопределениями полей из строк KEY=VALUE."""
+    for item in items:
+        key, value = item.split("=", 1)
+        field_type = type(getattr(cfg, key))
+        # bool("False") is True, поэтому для bool разбираем строку явно
+        parsed = value.lower() == "true" if field_type is bool else field_type(value)
+        cfg = replace(cfg, **{key: parsed})
+    return cfg
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", default="v1")
@@ -605,15 +616,7 @@ if __name__ == "__main__":
         lr=args.lr,
         weight_decay=args.weight_decay,
     )
-    for item in args.set:
-        key, value = item.split("=", 1)
-        if not hasattr(cfg, key):
-            parser.error(f"неизвестное поле Config: {key}")
-        field_type = type(getattr(cfg, key))
-        # bool("False") is True, поэтому для bool разбираем строку явно
-        parsed = value.lower() == "true" if field_type is bool else field_type(value)
-        cfg = replace(cfg, **{key: parsed})
-    cfg = cfg.smoke_if_needed()
+    cfg = apply_set(cfg, args.set).smoke_if_needed()
     if args.benchmark:
         benchmark(cfg, args.benchmark)
     else:

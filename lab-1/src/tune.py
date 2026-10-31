@@ -8,7 +8,7 @@ import optuna
 
 from src.config import Config
 from src.tracking import init_tracker
-from src.train import fit, fit_tabm
+from src.train import apply_set, fit, fit_tabm
 
 
 def suggest(trial: optuna.Trial, model: str) -> dict:
@@ -47,9 +47,12 @@ if __name__ == "__main__":
     parser.add_argument("--trials", type=int, required=True)
     parser.add_argument("--epochs", type=int, default=Config.epochs)
     parser.add_argument("--model", required=True, choices=["ft_transformer", "gandalf", "tabm"])
+    parser.add_argument("--set", action="append", default=[], metavar="KEY=VALUE")
     args = parser.parse_args()
 
-    base = Config(run_name=args.study, model=args.model, epochs=args.epochs).smoke_if_needed()
+    base = apply_set(
+        Config(run_name=args.study, model=args.model, epochs=args.epochs), args.set
+    ).smoke_if_needed()
     os.makedirs("runs/tune", exist_ok=True)
     study = optuna.create_study(
         study_name=base.run_name,
