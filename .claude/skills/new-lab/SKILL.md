@@ -34,7 +34,7 @@ Target layout: see "Layout" in `CLAUDE.md`.
 
 ## 3. Notebook skeleton lab-N.ipynb
 
-- First cell: `%load_ext autoreload  # dev-only` and `%autoreload 2  # dev-only`.
+- First cell: `get_ipython().run_line_magic("load_ext", "autoreload")  # dev-only` and `get_ipython().run_line_magic("autoreload", "2")  # dev-only` (a `%` magic treats a trailing comment as its argument and fails).
 - Lab title, then one section per assignment section with its original numbering (`## 1.2 ...`): a markdown cell with the requirement, an empty code cell, a placeholder for `> **Вывод:**`.
 - Teacher-required cells from «Оформление и сдача» (e.g. a flag cell) where the assignment puts them.
 - A final section «Итоговые выводы».

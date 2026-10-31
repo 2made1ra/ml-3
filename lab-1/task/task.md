@@ -52,12 +52,12 @@
 
 ## Этапы
 
-### [ ] Этап 1. Данные, preprocessing, CatBoost baseline — п. 1.1–1.2, 2 балла
+### [x] Этап 1. Данные, preprocessing, CatBoost baseline — п. 1.1–1.2, 2 балла
 - Требование: набор данных, адекватный preprocessing, разбиение train/val/test, классический tabular baseline (`assignment.md`, 1.1–1.2).
 - В ноутбуке: «Постановка задачи»; 1.1 — набор, классы и дисбаланс, краткий EDA со ссылкой на ml-2 ЛР1; 1.2 — итоговый pipeline, размеры выборок, распределение классов по выборкам, метрики CatBoost на val и test.
 - Как: `/code-lab stage 1` → `/train` → `/log-iteration` → `/write-conclusion`.
 - Готово, когда: размеры 1023 / 256 / 320; test совпадает с ml-2 ЛР1 (распределение классов как в `ml-2/LAB_I/docs/context/lab_1_memory.md`); CatBoost-ран в `runs/` с val- и test-метриками.
-- Результаты: —
+- Результаты: `runs/v1` (CatBoost): val F1 macro 0.2925, test 0.3293; Dummy — 0.0995. Test построчно совпадает с ml-2 ЛР1. Лог: `reports/iterations/v1.md`.
 - Доска: DL-2
 
 ### [ ] Этап 2. FT-Transformer и GANDALF «из коробки» — п. 1.3, 2 балла
