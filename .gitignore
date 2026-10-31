@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[oc]
+*.egg-info
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Данные и артефакты обучения
+lab-*/data/
+lab-*/artifacts/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+
+# Трекинг
+wandb/
+mlruns/
+mlflow.db
+lightning_logs/
+lab-*/runs/*-smoke/
+lab-*/runs/smoke/
+
+# Секреты
+.env
+
+# OS / IDE
+.DS_Store
+.claude/settings.local.json

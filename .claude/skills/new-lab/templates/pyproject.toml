@@ -1,0 +1,64 @@
+[project]
+name = "lab-N"
+version = "0.1.0"
+description = "Deep Learning, лабораторная N"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "torch>=2.7",
+    "torchvision>=0.22",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "plotly",
+    "kaleido",  # PNG-фолбэк для графиков (использует установленный Chrome)
+    "tqdm",
+    "wandb",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel",
+    "jupyter",
+    "nbformat",
+    "ruff",
+    "ty",
+]
+
+[tool.uv]
+package = false
+environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+# macOS: torch с PyPI (MPS включён). Linux (RTX 4090): CUDA 13.2.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu132", marker = "sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cu132", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu132"
+url = "https://download.pytorch.org/whl/cu132"
+explicit = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "NPY"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"*.ipynb" = ["E402", "F401", "B018"]  # импорты по ячейкам, последнее выражение — вывод ячейки
+
+[tool.ty.analysis]
+# опциональные бэкенды трекинга: ставятся через uv add только при переключении
+allowed-unresolved-imports = ["mlflow", "mlflow.**", "lightning", "lightning.**"]
+
+[tool.ty.rules]
+invalid-mutable-override = "ignore"  # ложное срабатывание на nn.Module.forward
