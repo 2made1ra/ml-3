@@ -9,3 +9,6 @@
 | v7 | веса классов balanced в CE (lr как в v5), обучение нестабильно | FT-Transformer | 0.2010 | 0.2048 | runs/v7 |
 | v8 | dropout 0.2 (lr как в v4) | GANDALF | 0.2875 | 0.3074 | runs/v8 |
 | v9 | embed_dim 16, 3 блока, ff_dropout 0.3 (lr как в v5) | FT-Transformer | 0.2433 | 0.3204 | runs/v9 |
+| v10 | финальный перезапуск v1 + importance, ручные объекты | CatBoost | 0.2925 | 0.3293 | runs/v10 |
+| v11 | финальный перезапуск v4 + importance, ручные объекты | GANDALF | 0.2907 | 0.3041 | runs/v11 |
+| v12 | финальный перезапуск v5 + importance, ручные объекты (не повторил v5: MPS) | FT-Transformer | 0.2892 | 0.3032 | runs/v12 |
