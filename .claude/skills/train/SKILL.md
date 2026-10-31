@@ -17,7 +17,7 @@ The user always starts training, with the same command on either machine. Output
 
 ## 2. Estimate Mac time
 
-Skip if the user already chose the machine.
+Skip if the user already chose the machine: in chat or in «Решения» of `task/task.md`.
 
 ```bash
 uv run python -m src.train --run vN --benchmark 30
