@@ -30,8 +30,13 @@ uv run mlflow ui --backend-store-uri sqlite:///$HOME/.mlflow/mlflow.db   # → h
 /new-lab N → /code-lab all → (/tune) → /train → /log-iteration → … → /write-conclusion → /lab-review → /pack-submission → /prep-defense
 ```
 
+Или `/lab-flow N` — Claude пройдёт эти шаги сам, спрашивая подтверждение перед каждым.
+
+Каждая лаба делается в своей ветке `lab-N` и в конце сливается в `main`.
+
 ## Полезно знать
 
+- Задачи живут в `lab-N/task/task.md`; доска kvatask только показывает их (эпик на лабу, задача на этап).
 - Ноутбук не обучает модели — он читает `runs/` и строит графики (Plotly), поэтому выполняется за секунды.
 - `SMOKE=1` перед командой — быстрый прогон на паре батчей; такие раны попадают в `runs/*-smoke/` и не коммитятся.
 - Трекер переключается переменной: `TRACKER=none` — без MLflow. Во время обучения на PC живые кривые — в `mlflow ui` на самом PC.
