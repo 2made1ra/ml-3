@@ -29,6 +29,9 @@ class Config:
     weight_decay: float = 1e-4
     class_weights: str = "none"  # none | balanced
 
+    # анализ финальных моделей
+    perm_repeats: int = 10  # перестановок на признак в permutation importance
+
     # CatBoost (параметры Optuna из ml-2 ЛР1)
     cb_iterations: int = 476
     cb_learning_rate: float = 0.07179
@@ -61,4 +64,5 @@ class Config:
             batch_size=min(self.batch_size, 16),
             num_workers=0,
             cb_iterations=20,
+            perm_repeats=1,
         )

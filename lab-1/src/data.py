@@ -75,3 +75,47 @@ def fingerprint(train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame) -> d
 def to_xy(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
     """Признаки и метки quality - 3 (0..5)."""
     return df.drop(columns=TARGET), df[TARGET].to_numpy() - CLASSES[0]
+
+
+# База — округлённые медианы train; остальные признаки у каждого объекта равны базе.
+# Типы: обычный, серия по alcohol, хороший/плохой по признакам, необычный, вне train, противоречивый.
+_BASE = {
+    "fixed acidity": 7.9,
+    "volatile acidity": 0.52,
+    "citric acid": 0.26,
+    "residual sugar": 2.2,
+    "chlorides": 0.079,
+    "free sulfur dioxide": 14.0,
+    "total sulfur dioxide": 39.0,
+    "density": 0.9968,
+    "pH": 3.30,
+    "sulphates": 0.62,
+    "alcohol": 10.1,
+}
+_CHANGES = [
+    ("обычный", {}),
+    ("серия alcohol", {"alcohol": 9.0}),
+    ("серия alcohol", {"alcohol": 11.0}),
+    ("серия alcohol", {"alcohol": 12.5}),
+    ("серия alcohol", {"alcohol": 14.0}),
+    (
+        "хорошее по признакам",
+        {"volatile acidity": 0.35, "citric acid": 0.40, "sulphates": 0.80, "alcohol": 12.0},
+    ),
+    (
+        "плохое по признакам",
+        {"volatile acidity": 0.90, "citric acid": 0.05, "sulphates": 0.50, "alcohol": 9.4},
+    ),
+    ("необычное, но возможное", {"volatile acidity": 1.2}),
+    ("вне train: alcohol", {"alcohol": 16.0}),
+    ("вне train: сладкое", {"residual sugar": 25.0, "density": 1.005}),
+    ("вне train: sulphates, chlorides", {"sulphates": 2.5, "chlorides": 0.8}),
+    ("противоречивое", {"alcohol": 13.5, "volatile acidity": 1.0}),
+]
+MANUAL_OBJECTS = [{"type": t, **_BASE, **c} for t, c in _CHANGES]
+
+
+def manual_objects() -> pd.DataFrame:
+    """12 объектов, созданных вручную: id, type и 16 признаков модели."""
+    objects = add_features(pd.DataFrame(MANUAL_OBJECTS))
+    return objects.assign(id=np.arange(1, len(objects) + 1))[["id", "type", *objects.columns[1:]]]

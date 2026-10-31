@@ -16,7 +16,15 @@ from sklearn.metrics import balanced_accuracy_score, f1_score, roc_auc_score
 from sklearn.utils.class_weight import compute_class_weight
 
 from src.config import Config
-from src.data import CLASSES, DATASET, TARGET, fingerprint, load_splits, to_xy
+from src.data import (
+    CLASSES,
+    DATASET,
+    TARGET,
+    fingerprint,
+    load_splits,
+    manual_objects,
+    to_xy,
+)
 from src.plots import plot_confusion
 from src.results import check_new_run, save_run
 from src.tracking import init_tracker
@@ -35,6 +43,45 @@ def compute_metrics(y_true, y_pred, proba) -> dict:
             y_true, proba, multi_class="ovr", labels=list(range(len(CLASSES)))
         ),
     }
+
+
+def permutation_importance(
+    proba_fn, X: pd.DataFrame, y: np.ndarray, n_repeats: int, seed: int
+) -> pd.DataFrame:
+    """Падение F1 macro при перемешивании признака: perm_mean и perm_std по n_repeats."""
+    rng = np.random.default_rng(seed)
+    base = f1_score(y, proba_fn(X).argmax(axis=1), average="macro", zero_division=0)
+    rows = []
+    for feature in X.columns:
+        drops = []
+        for _ in range(n_repeats):
+            X_shuffled = X.copy()
+            X_shuffled[feature] = rng.permutation(X[feature].to_numpy())
+            score = f1_score(
+                y, proba_fn(X_shuffled).argmax(axis=1), average="macro", zero_division=0
+            )
+            drops.append(base - score)
+        rows.append({"feature": feature, "perm_mean": np.mean(drops), "perm_std": np.std(drops)})
+    return pd.DataFrame(rows)
+
+
+def save_analysis(
+    run_dir, cfg: Config, proba_fn, X_test: pd.DataFrame, y_test: np.ndarray, builtin: np.ndarray
+) -> None:
+    """Пишет importance.csv (permutation + встроенный) и manual.csv (предсказания на ручных объектах)."""
+    # на test только анализ финальных моделей, для выбора моделей он не используется
+    importance = permutation_importance(proba_fn, X_test, y_test, cfg.perm_repeats, cfg.seed)
+    importance["builtin"] = builtin
+    importance.to_csv(run_dir / "importance.csv", index=False)
+
+    objects = manual_objects()
+    proba = proba_fn(objects[X_test.columns.tolist()])
+    manual = pd.DataFrame(
+        {"id": objects["id"], "type": objects["type"], "y_pred": proba.argmax(axis=1) + CLASSES[0]}
+    )
+    for i, c in enumerate(CLASSES):
+        manual[f"prob_{c}"] = proba[:, i]
+    manual.to_csv(run_dir / "manual.csv", index=False)
 
 
 def make_model(cfg: Config) -> CatBoostClassifier:
@@ -115,6 +162,7 @@ def train_catboost(cfg: Config) -> dict:
         tracker_run=tracker.run_ref,
         data=fingerprint(train_df, val_df, test_df),
     )
+    save_analysis(run_dir, cfg, model.predict_proba, X_test, y_test, model.get_feature_importance())
     tracker.log_artifacts(run_dir)
     tracker.log_figure(
         plot_confusion(
@@ -295,6 +343,16 @@ def train_nn(cfg: Config) -> dict:
         device=get_device().type,
         tracker_run=tracker.run_ref,
         data=fingerprint(train_df, val_df, test_df),
+    )
+    X_test = test_frame.drop(columns=TARGET)
+    builtin = model.feature_importance().set_index("Features")["importance"]
+    save_analysis(
+        run_dir,
+        cfg,
+        lambda X: predict_proba(model, X),
+        X_test,
+        y_test,
+        builtin.loc[X_test.columns].to_numpy(),
     )
     tracker.log_artifacts(run_dir)
     tracker.log_figure(
