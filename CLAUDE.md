@@ -26,7 +26,7 @@ Applies to chat, agent messages, instruction files and code.
 ## Machines
 
 - **Mac M4, 16 GB (MPS)**: code, EDA, smoke runs, notebook, light training.
-- **Linux (Omarchy) + RTX 4090 (CUDA)**: heavy training. Code gets there via `git push` / `git pull`.
+- **Linux (Omarchy) + RTX 4090 (CUDA)**: heavy training. Code gets there via `git push` / `git pull` of the lab branch (see "Git").
 
 `/train` decides where an iteration trains. Device-dependent code uses `get_device()` only (cuda → mps → cpu); libraries with their own device choice get it passed explicitly (`.claude/rules/training-code.md`).
 
@@ -39,6 +39,8 @@ Applies to chat, agent messages, instruction files and code.
 5. Training writes `runs/vN/` (committed) and a run in the machine's local MLflow.
 6. `/log-iteration`: iteration log. The notebook plots from `runs/`.
 7. `/write-conclusion` → `/lab-review` → `/pack-submission`; `/prep-defense` before the defense.
+
+`/lab-flow N` drives steps 1–7 itself: it calls the skills in order and asks the user before every step.
 
 `runs/*/summary.json` is the source of truth for numbers. MLflow is only a dashboard. The notebook is the submission: it reads `runs/` and does not retrain.
 
@@ -53,6 +55,7 @@ Local files are the source of truth for tasks: `task/task.md` (stages, their con
 - **`lab-coder` subagent (Sonnet, medium effort)**: writes code from a spec. Defined in `.claude/agents/lab-coder.md`.
 - **User**: edits conclusions; chooses who starts each full training or tuning run. Claude gives the command and asks; it never starts a full run without that answer. Claude starts runs only on the Mac, in the background; PC runs are the user's. Smoke and `--benchmark` Claude runs itself.
 - Numbers in conclusions and reports come only from `runs/`, cell outputs or MLflow. Never invent them.
+- A model, library or approach the user chose does not work: stop and decide with the user. Never switch to a fallback alone.
 
 ## Layout
 
@@ -117,6 +120,11 @@ SMOKE=1 uv run python -m src.train --run smoke
 
 ## Git
 
+- One lab = one branch `lab-N`:
+  - `/new-lab` creates it from an up-to-date `main` before writing any file.
+  - All work during the lab is committed there, including repo setup changes (`.claude/`, `CLAUDE.md`, `docs/`). The PC trains on that branch too.
+  - The lab ends with a merge into `main`: `git merge --no-ff lab-N` after `/pack-submission`, only on the user's go.
+  - The branch is kept after the merge: board links point to it.
 - Commit types: `feat(labN)`, `bug(labN)`, `docs(labN)`, `run(labN): vN — ...` (training results), `chore`. Message in Russian.
 - Pre-commit hooks (prek, `.pre-commit-config.yaml`): gitleaks, files > 5 MB, `ruff check`. Never bypass them with `--no-verify`; fix the cause.
 - Commit only when the user asks. Before committing, check that `data/`, `artifacts/`, `mlflow.db`, `mlruns/`, `mlartifacts/` are not staged.

@@ -41,10 +41,10 @@ Show the command, then ask who starts it with one AskUserQuestion, giving the ti
 - **Claude starts:** Bash from `lab-N/` with `run_in_background: true`; do not poll, the exit notification arrives on its own. Then check the exit code and `runs/vN/summary.json`, report the duration and the main val metric, and continue with `/log-iteration`. A failure → section 4.
 - **The user starts:** wait for their «готово», then `/log-iteration`.
 
-**PC** (always started by the user: Claude has no access to it): first commit and push the code on the Mac (only with the user's consent: `feat(labN): ...`). Then on the PC:
+**PC** (always started by the user: Claude has no access to it; works on the lab branch `lab-N`): first commit and push the code on the Mac (only with the user's consent: `feat(labN): ...`). Then on the PC:
 
 ```bash
-git pull && cd lab-N && uv sync
+git fetch && git switch lab-N && git pull && cd lab-N && uv sync
 uv run python -m src.train --run vN
 git add runs/vN && git commit -m "run(labN): vN — <суть>" && git push
 ```

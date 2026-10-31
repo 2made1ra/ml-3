@@ -41,7 +41,7 @@ Type codes: `epic`, `task`. A wrong code returns `ERR_INVALID_*` with `valid_cod
 
 ## 4. Sync
 
-Every description ends with a «Подробно» block of clickable links to the lab's md files, where the work is described in full. Link base: `git remote get-url origin` without `.git` + `/blob/main/`, e.g. `https://github.com/<owner>/<repo>/blob/main/lab-N/task/task.md`. The links open what is pushed to `main`: if `git status` or `git log origin/main..` shows the linked files unpushed, warn the user that the board shows the old version until a push.
+Every description ends with a «Подробно» block of clickable links to the lab's md files, where the work is described in full. Link base: `git remote get-url origin` without `.git` + `/blob/lab-N/`, the lab's branch ("Git" in `CLAUDE.md`). Example: `https://github.com/<owner>/<repo>/blob/lab-N/lab-N/task/task.md`. The links open what is pushed to that branch. If `git status` or `git log origin/lab-N..` shows the linked files unpushed, warn the user that the board shows the old version until a push.
 
 1. Epic: title = the `task.md` title (`Лабораторная N: <тема>`); description = «Цель» and the «Баллы» table; due date = «Дедлайн». «Подробно»:
    - План этапов: `lab-N/task/task.md`

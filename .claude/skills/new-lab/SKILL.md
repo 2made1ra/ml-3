@@ -8,6 +8,16 @@ argument-hint: "<lab number> [assignment file or attached image]"
 
 Assignment analysis, scaffold and environment. Data, models and training come later via `/code-lab`.
 
+## 0. Branch
+
+The lab lives on branch `lab-N` ("Git" in `CLAUDE.md`). If it exists, switch to it. Otherwise:
+
+```bash
+git switch main && git pull && git switch -c lab-N
+```
+
+Uncommitted changes on `main`: ask the user first (commit them to `main`, or carry them into the branch). Assignment files already dropped into `lab-N/task/` are untracked and move with the switch.
+
 ## 1. Plan
 
 - If `lab-N/` exists, inspect it (the assignment may already be there) and overwrite nothing.
@@ -32,4 +42,5 @@ Target layout: see "Layout" in `CLAUDE.md`.
 ## 4. Finish
 
 - Show the user the stage list, the decisions and the open questions from `task.md`. Never resolve ambiguities silently.
+- Offer to commit the scaffold and push the branch: `git push -u origin lab-N`. The board links and the PC need it.
 - Next step: `/code-lab all` (stage by stage) or `/code-lab stage 1`.
