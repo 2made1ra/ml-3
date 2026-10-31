@@ -1,4 +1,4 @@
-"""Optuna-исследование lr и weight_decay для моделей pytorch_tabular."""
+"""Optuna-исследование lr и weight_decay для моделей pytorch_tabular и TabM."""
 
 import argparse
 import os
@@ -8,11 +8,16 @@ import optuna
 
 from src.config import Config
 from src.tracking import init_tracker
-from src.train import fit
+from src.train import fit, fit_tabm
 
 
-def suggest(trial: optuna.Trial) -> dict:
+def suggest(trial: optuna.Trial, model: str) -> dict:
     """Пространство поиска раунда: переопределения полей Config."""
+    if model == "tabm":
+        return {
+            "lr": trial.suggest_float("lr", 2e-4, 2e-2, log=True),
+            "weight_decay": trial.suggest_float("weight_decay", 1e-5, 1e-2, log=True),
+        }
     return {
         "lr": trial.suggest_float("lr", 1e-4, 1e-2, log=True),
         "weight_decay": trial.suggest_float("weight_decay", 1e-6, 1e-3, log=True),
@@ -23,11 +28,14 @@ def objective(trial: optuna.Trial, base: Config) -> float:
     """Обучает модель с параметрами trial и возвращает val macro F1 (test не используется)."""
     cfg = replace(
         base,
-        **suggest(trial),
+        **suggest(trial, base.model),
         run_name=f"{base.run_name}-t{trial.number}",
     )
     tracker = init_tracker(cfg, nested=True)
-    _, _, metrics = fit(cfg, tracker)
+    if base.model == "tabm":
+        _, _, _, metrics = fit_tabm(cfg, tracker)
+    else:
+        _, _, metrics = fit(cfg, tracker)
     tracker.summary(metrics)
     tracker.finish()
     return metrics["val_f1_macro"]
@@ -38,7 +46,7 @@ if __name__ == "__main__":
     parser.add_argument("--study", required=True)
     parser.add_argument("--trials", type=int, required=True)
     parser.add_argument("--epochs", type=int, default=Config.epochs)
-    parser.add_argument("--model", required=True, choices=["ft_transformer", "gandalf"])
+    parser.add_argument("--model", required=True, choices=["ft_transformer", "gandalf", "tabm"])
     args = parser.parse_args()
 
     base = Config(run_name=args.study, model=args.model, epochs=args.epochs).smoke_if_needed()
