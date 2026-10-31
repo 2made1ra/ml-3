@@ -13,6 +13,6 @@ paths:
 - A cell whose first line is `# user-owned` is the user's code: never edit it without an explicit request (see `.claude/rules/training-code.md`).
 - Edit cells with NotebookEdit, one cell at a time. Never rewrite the whole notebook or clear the user's outputs.
 - Smoke-test a copy, never the original: `SMOKE=1 uv run jupyter nbconvert --to notebook --execute lab-N.ipynb --output-dir <scratchpad>`.
-- Sections follow `task/task.md`: one `## N. ...` heading per requirement, same numbering.
+- Sections follow the assignment's sections with their original numbering (`## 1.2 ...`, see `task/assignment.md`). Teacher-required cells and formatting: «Оформление и сдача» in `task/task.md`.
 - A conclusion is a markdown cell `> **Вывод:** ...` right after the plot or table it describes. Written via `/write-conclusion`.
 - Plotly only. Every plot has a title and axis labels; train and val curves share one plot.

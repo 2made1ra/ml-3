@@ -9,7 +9,7 @@ Lab assignments for a Deep Learning course (MSc, semester 3).
 | Chat with the user | Russian |
 | Agent-to-agent: Agent prompts, specs, `SendMessage`, subagent reports | English, always |
 | Instruction files: `CLAUDE.md`, `.claude/**` | English |
-| Deliverables: notebook markdown and conclusions, `task/task.md`, `reports/`, `README.md`, `docs/`, commit messages, comments/docstrings/printed messages in lab code | Russian |
+| Deliverables: notebook markdown and conclusions, `task/assignment.md`, `task/task.md`, `reports/`, `README.md`, `docs/`, commit messages, comments/docstrings/printed messages in lab code | Russian |
 
 Keep ML terms in English (`backbone`, `fine-tuning`, `macro F1`) in any language.
 
@@ -32,12 +32,13 @@ Applies to chat, agent messages, instruction files and code.
 
 ## Workflow
 
-1. `/new-lab N`: scaffold, environment, requirements checklist `task/task.md`.
+1. `/new-lab N`: assignment analysis via `/plan-lab` (transcript, interview, stage plan `task/task.md`), scaffold, environment. `task.md` drives all later steps.
 2. `/code-lab <goal>`: the main model decides and writes a spec, `lab-coder` writes code, the main model verifies.
-3. `/train`: time estimate, machine choice, commands. The user starts training.
-4. Training writes `runs/vN/` (committed) and a run in the machine's local MLflow.
-5. `/log-iteration`: iteration log. The notebook plots from `runs/`.
-6. `/write-conclusion` → `/lab-review` → `/pack-submission`.
+3. `/tune` (when needed): Optuna study of nuisance hyperparameters, planned by the Google Tuning Playbook.
+4. `/train`: time estimate, machine choice, commands. The user starts training.
+5. Training writes `runs/vN/` (committed) and a run in the machine's local MLflow.
+6. `/log-iteration`: iteration log. The notebook plots from `runs/`.
+7. `/write-conclusion` → `/lab-review` → `/pack-submission`; `/prep-defense` before the defense.
 
 `runs/*/summary.json` is the source of truth for numbers. MLflow is only a dashboard. The notebook is the submission: it reads `runs/` and does not retrain.
 
@@ -52,14 +53,15 @@ Applies to chat, agent messages, instruction files and code.
 
 ```
 ml-3/
-├── CLAUDE.md, README.md, docs/backlog.md
-├── .claude/{agents,rules,skills}
+├── CLAUDE.md, README.md, docs/backlog.md, .pre-commit-config.yaml
+├── .claude/{agents,rules,skills,settings.json}
 └── lab-N/                  # one lab = one uv project
     ├── pyproject.toml      # uv.lock is committed
     ├── lab-N.ipynb         # submission notebook
     ├── src/                # template: config, utils, tracking, results, plots, sync_mlflow; per lab: data, models, train
-    ├── task/               # original assignment + task.md
+    ├── task/               # originals + assignment.md (transcript) + task.md (stage plan)
     ├── runs/vN/            # run snapshots, committed (*-smoke ignored)
+    ├── runs/tune/<study>.db  # Optuna studies, committed
     ├── reports/            # iterations/vN.md, results.md
     ├── submission/         # packed notebook
     ├── data/               # datasets, gitignored
@@ -94,6 +96,7 @@ SMOKE=1 uv run python -m src.train --run smoke
 
 - `seed_everything(cfg.seed)` at the start of every run. All hyperparameters live in `Config` and go to MLflow and `summary.json`.
 - Splits are seeded. Test data never drives model or hyperparameter selection.
+- Dataset versions are pinned (`.claude/rules/training-code.md`). `summary.json` records `git_commit` and `git_dirty`.
 
 ## Secrets
 
@@ -103,9 +106,11 @@ SMOKE=1 uv run python -m src.train --run smoke
 - Code never passes tokens explicitly (`token=...`, `os.environ[...]`); libraries find them.
 - Claude never asks for a secret in chat, never reads or prints token files, never enters keys. It gives the login command; the user runs it.
 - On 401/403 from `kagglehub`/`datasets`, check the login on that machine first.
+- Enforced, not just instructed: `Read` deny rules for token files in `.claude/settings.json`; gitleaks in the pre-commit hooks.
 
 ## Git
 
 - Commit types: `feat(labN)`, `bug(labN)`, `docs(labN)`, `run(labN): vN — ...` (training results), `chore`. Message in Russian.
+- Pre-commit hooks (prek, `.pre-commit-config.yaml`): gitleaks, files > 5 MB, `ruff check`. Never bypass them with `--no-verify`; fix the cause.
 - Commit only when the user asks. Before committing, check that `data/`, `artifacts/`, `mlflow.db`, `mlruns/`, `mlartifacts/` are not staged.
 - Commit notebook outputs (plots must be visible).

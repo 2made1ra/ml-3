@@ -51,12 +51,18 @@ Lab code is read by a student and a teacher. Applies to `src/` and notebook code
 - Datasets are defined in `src/data.py`: on macOS, `DataLoader(num_workers>0)` cannot pickle classes defined in a notebook. `pin_memory=True` on CUDA only.
 - All hyperparameters live in `Config` (`src/config.py`). `smoke_if_needed()` shrinks epochs, batch and data under `SMOKE=1` and sets `tracker="none"`.
 - Logging goes through `src/tracking.py` only; no direct `mlflow.*` calls elsewhere. The full `asdict(cfg)` is logged; final metrics go through `tracker.summary()` (prefix `final/`).
+- Pin the dataset version in `src/data.py` as a module constant: kagglehub handle `owner/name/versions/N`, HF `load_dataset(..., revision="<commit sha>")`. The run's `git_commit` then identifies the data too.
 - Seeding: `seed_everything(cfg.seed)` at run start; a seeded `generator` for `random_split` and `DataLoader`.
 - At the end of training call `save_run(cfg, history, metrics, predictions, device=..., tracker_run=tracker.run_ref)` from `src/results.py`. Column conventions are in its docstring. Anything the notebook needs from model weights (Grad-CAM, error examples) is computed at the end of training and saved as a small file in `runs/<run_name>/`.
 - `src/train.py` contract:
   - `train(cfg) -> dict`: train, early stopping on val, best checkpoint to `artifacts/<run_name>_best.pt`, evaluate the best checkpoint on test, `save_run(...)`.
   - CLI `uv run python -m src.train --run vN [--epochs ..] [--benchmark K]`. Build the config as `Config(run_name=args.run, ...).smoke_if_needed()` so a smoke run lands in `runs/<name>-smoke/` (gitignored).
   - `--benchmark K`: K steps on the full config, no tracker, no saving; print `sec/step`, `steps/epoch`, estimated total time.
+- Only if the lab uses `/tune`:
+  - `src/train.py` also exposes `fit(cfg) -> tuple[nn.Module, list[dict], dict]`: training with early stopping on val; returns the best model, the history and the best val metrics. No test, no checkpoint, no `save_run`. `train(cfg)` = tracker + `fit` + test evaluation of the best model + checkpoint + `save_run`.
+  - `src/tune.py`: `suggest(trial) -> dict` returns the round's search space as `Config` field overrides; `objective(trial, base)` builds `replace(base, **suggest(trial), run_name=f"{base.run_name}-t{trial.number}", tracker="none")` and returns the val metric from `fit`.
+  - CLI `uv run python -m src.tune --study <name> --trials N [--epochs E]`. Base config: `Config(run_name=args.study, ...).smoke_if_needed()`. Study: `optuna.create_study(study_name=base.run_name, storage=f"sqlite:///runs/tune/{base.run_name}.db", load_if_exists=True, direction=..., sampler=optuna.samplers.TPESampler(seed=base.seed))`; print the best value and params at the end.
+  - Test data is never used in tuning.
 - Importing a module must not run anything. CLI code goes under `if __name__ == "__main__":` (packing removes it).
 - Import sibling modules as `from src.utils import ...`, not relative imports.
 - Lightning only if the lab chose it.

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(~/.kaggle/**)",
+      "Read(~/.cache/huggingface/token)",
+      "Read(~/.cache/huggingface/stored_tokens)",
+      "Read(~/.netrc)"
+    ]
+  }
+}

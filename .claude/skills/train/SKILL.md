@@ -12,6 +12,8 @@ The user always starts training, with the same command on either machine. Output
 
 - Run name: next after the latest `runs/v*` (excluding `-smoke`), unless the user names one.
 - Smoke must pass (see "Checks" in `CLAUDE.md`).
+- Code is committed, also before a Mac run (commit only with the user's consent): then `git_commit` in `summary.json` identifies it; otherwise the run is marked `git_dirty`.
+- If the iteration needs nuisance hyperparameters (usually lr) tuned, run `/tune` first.
 
 ## 2. Estimate Mac time
 

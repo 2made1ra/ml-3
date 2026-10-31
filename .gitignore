@@ -22,6 +22,7 @@ mlartifacts/
 lightning_logs/
 lab-*/runs/*-smoke/
 lab-*/runs/smoke/
+lab-*/runs/tune/*-smoke.db
 
 # Секреты (страховка: в репозитории их быть не должно)
 .env

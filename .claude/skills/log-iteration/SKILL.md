@@ -15,7 +15,8 @@ Rules for these files: `.claude/rules/experiments.md`.
   1. `runs/vN/summary.json` (metrics, config, device, host, MLflow run id) and `runs/vN/history.csv` (val loss minimum, overfitting). If the folder is missing after PC training, remind the user to `git pull`.
   2. MLflow, for what the snapshot lacks (e.g. per-step metrics). A run from this machine: by `tracker_run`. A run from the other machine has only snapshot data after `uv run python -m src.sync_mlflow`.
   3. Notebook outputs and what the user said in chat.
-- Config diff: `config` in `runs/vN/summary.json` vs `runs/v(N-1)/summary.json`. Code diff: `git diff` of `src/` since the previous iteration's commit.
+- Config diff: `config` in `runs/vN/summary.json` vs `runs/v(N-1)/summary.json`. Code diff: `git diff <git_commit of v(N-1)> <git_commit of vN> -- src/`. If `git_dirty` is true, the run used uncommitted code: say so in the header.
+- Hypothesis: from the `/code-lab` spec or the user; if unknown, ask.
 - Complications: `grep -n "# усложнение:" src/` and the «Усложнения» sections of `/code-lab` reports in this session. A complication in the code diff without such a comment is logged as «причина не зафиксирована» and reported to the user.
 - Missing data: ask one question or write `TODO`. Never guess.
 
@@ -24,12 +25,15 @@ Rules for these files: `.claude/rules/experiments.md`.
 ```markdown
 # vN: <суть итерации>
 
-Дата: YYYY-MM-DD · Машина: Mac M4 / RTX 4090 · MLflow run: <tracker_run> · Время обучения: <если известно>
+Дата: YYYY-MM-DD · Машина: Mac M4 / RTX 4090 · Коммит: <git_commit[:7]> · MLflow run: <tracker_run> · Время обучения: <если известно>
+
+Гипотеза: <изучаемое изменение> → <ожидаемый эффект>
 
 ## Что изменилось относительно v(N-1)
 
-| Параметр | v(N-1) | vN |
-| --- | ---: | ---: |
+| Параметр | v(N-1) | vN | Роль |
+| --- | ---: | ---: | --- |
+| <параметр> | <было> | <стало> | изучаемый / вспомогательный |
 
 Изменения в коде: <1–3 пункта>
 
@@ -45,6 +49,8 @@ Rules for these files: `.claude/rules/experiments.md`.
 ## Сравнение с лучшим
 
 Лучший до этого: vK — <метрика>. Сейчас: <метрика> (Δ <+/−>).
+
+Гипотеза: <подтвердилась / не подтвердилась / не ясно — разница в пределах шума>.
 
 ## Интерпретация
 

@@ -1,0 +1,17 @@
+# Проверки перед каждым коммитом. Установка на машине: `uv tool install prek && prek install`.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks # токены и ключи в коммите
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files # датасеты, чекпоинты, раздутые predictions.csv
+        args: ["--maxkb=5000"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.3
+    hooks:
+      - id: ruff-check # только lint, без автоисправлений; конфиг берётся из pyproject.toml лабы
