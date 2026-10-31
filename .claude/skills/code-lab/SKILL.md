@@ -1,58 +1,90 @@
 ---
 name: code-lab
-description: Написать или изменить код лабораторной (данные, модели, обучение, ноутбук). Основная модель принимает решения и пишет спецификацию, код пишет субагент lab-coder (Sonnet), затем результат проверяется ruff, ty и smoke-прогоном. Использовать, когда нужно реализовать пункт задания, новую модель/эксперимент, исправить баг в src/ или ноутбуке.
-argument-hint: "<что реализовать> [lab-N]"
+description: Write, rewrite or review lab code (data, models, training, notebook). Modes — `all` (plan the whole lab from task.md and implement it step by step), `<task>` (one piece or a rewrite), `review` (check code the user wrote, no generation). The main model decides and verifies; the lab-coder subagent (Sonnet) writes code. Use to implement requirements, change or rewrite code, fix bugs, or review the user's own code.
+argument-hint: "all | review [scope] | <what to implement or rewrite> [lab-N]"
 ---
 
 # /code-lab
 
-Разделение ролей: **ты (основная модель) решаешь и проверяешь, `lab-coder` пишет код.** Сам код в `src/` не пишешь — кроме однострочных правок после ревью, где делегирование дороже самой правки.
+You decide and verify; `lab-coder` writes code. You write no `src/` code yourself, except one-line fixes after review. Code marked `# user-owned` is protected (see `.claude/rules/training-code.md`).
 
-## 1. Решить
+## Modes
 
-- Прочитать `task/task.md`, текущий `src/`, ноутбук, последние `reports/iterations/*.md` (чтобы не повторять отброшенные идеи).
-- Определить, что делаем: какие файлы, какие функции/классы, архитектура модели, loss, метрики, аугментации, гиперпараметры по умолчанию, что логировать, что сохранять в `runs/`.
-- Если есть реальная развилка (например, какую архитектуру брать в рамках ограничений задания, как трактовать неясный пункт) — спросить пользователя одним AskUserQuestion с рекомендацией. Технические мелочи решать самому.
+| Argument | Mode |
+| --- | --- |
+| `all` or empty | Whole lab: plan, then steps one by one |
+| `review [scope]` | Review the user's code only |
+| anything else | One task: implement or rewrite |
 
-## 2. Спецификация для lab-coder
+## Mode: all
 
-Вызвать `Agent` с `subagent_type: "lab-coder"`. Спецификация самодостаточна (субагент не видит этот разговор):
+1. Build a plan from the unchecked items in `task/task.md` and the current `src/`. Order: data + EDA → baseline model → training loop → experiments → notebook results (plots from `runs/`). One step = one spec that fits one review. Map each step to its requirement numbers.
+2. Show the plan to the user (numbered, one line per step) and wait for approval or edits.
+3. Run each step through "One task" below. After each step report in 2–3 lines (what was done, smoke result) plus the «Усложнения» section from step 5, and wait for the user's go before the next step: the user may inspect results or write the next piece themselves.
+4. When a step fully covers a requirement, tick its checkbox in `task.md`. The checkboxes are the progress state across sessions.
+
+## Mode: one task
+
+### 1. Decide
+
+- Read `task/task.md`, current `src/`, the notebook and recent `reports/iterations/*.md` (do not repeat rejected ideas).
+- Decide: files, functions/classes, architecture, loss, metrics, augmentations, default hyperparameters, what to log and save to `runs/`.
+- First make sure the design meets the requirement, then make it as simple as possible ("Priorities" in `.claude/rules/training-code.md`).
+- List every complication you put into the spec with its reason tied to the goal. No reason, no complication.
+- For a rewrite, define the scope: exact files and functions to replace, what stays. If the rewrite changes model or training behavior, the next training run is a new iteration; the old code stays in git history.
+- If the scope touches `# user-owned` code, ask the user before writing the spec.
+- For a real fork (architecture choice within the assignment's limits, an ambiguous requirement), ask one AskUserQuestion with your recommendation. Decide technical details yourself.
+
+### 2. Spec
+
+Call `Agent` with `subagent_type: "lab-coder"` (in `all` mode, continue the same subagent via `SendMessage` while its context helps; start a fresh one if context is stale). The spec is in English and self-contained; rules already in `.claude/rules/` need no repeating.
 
 ```
-Лаба: lab-N (абсолютный путь)
-Цель: <одно предложение>
-Пункты задания: <номера из task.md>
+Lab: <absolute path to lab-N>
+Goal: <one sentence>
+Requirements: <numbers from task.md>
 
-Файлы и что в них:
-- src/data.py: <источник данных (kaggle id / HF id), препроцессинг, сплит, аугментации, make_loaders(cfg)>
-- src/models.py: <классы, слои, размеры, инициализация>
-- src/train.py: <loss, оптимизатор, scheduler, метрики, early stopping по ..., что в history/metrics/predictions>
-- src/config.py: <новые поля и дефолты>
-- lab-N.ipynb: <какие ячейки добавить/изменить в каких секциях>
+Change (only these):
+- src/data.py: <source (kaggle/HF id), preprocessing, split, augmentations, make_loaders(cfg)>
+- src/models.py: <classes, layers, sizes, init>
+- src/train.py: <loss, optimizer, scheduler, metrics, early stopping on ..., contents of history/metrics/predictions>
+- src/config.py: <new fields and defaults>
+- lab-N.ipynb: <cells to add/change, in which sections>
 
-Ограничения: <из task.md: запрещённые модели/библиотеки и т.п.>
-Готово, когда: ruff/ty чистые, smoke проходит, <конкретный критерий>.
+Do not touch: <everything else in scope that must stay, incl. user-owned code>
+Complications: <each one with its reason, or "none">
+Constraints: <from task.md>
+Done when: checks pass, <specific criterion>.
 ```
 
-## 3. Проверить результат
+### 3. Verify
 
-Не доверять отчёту на слово — перепроверить самому из папки лабы:
+Do not trust the report. From `lab-N/`, run "Checks" from `CLAUDE.md`. Review `git diff -- lab-N/` for what linters miss:
 
-```bash
-uv run ruff check src *.ipynb && uv run ruff format --check src && uv run ty check src
-SMOKE=1 uv run python -m src.train --run smoke
-```
+- matches the spec and `task.md`; nothing outside the declared scope changed; `# user-owned` code untouched;
+- the goal is met: the spec's "Done when" holds; nothing the goal needs was dropped for simplicity;
+- complications: each one is in the spec or in the subagent's report with a reason tied to the goal. Each carries its `# усложнение:` comment. An unjustified complication is a finding to remove; a justified one added by the subagent goes to the user report;
+- simplicity and docstrings: every item of the "Simplicity" and "Docstrings and comments" sections of `.claude/rules/training-code.md` holds. Anything not required (extra options, abstractions, defensive code, long docstrings) is a finding to fix, not a style nit;
+- no leakage: normalization stats and vocabularies from train only; test never selects the model;
+- `model.eval()` + `inference_mode` on val/test; metric aggregation is correct (per sample vs per batch, macro vs micro);
+- the best checkpoint is the one evaluated and saved; `save_run` is called.
 
-Затем ревью диффа (`git diff -- lab-N/`) на то, что линтер не ловит:
-- соответствие спецификации и `task.md`;
-- утечки: статистики нормализации/словари только по train, test не используется для выбора модели;
-- `model.eval()` / `inference_mode` на валидации, корректный подсчёт метрик (усреднение по батчам vs по объектам, macro vs micro);
-- `get_device()` вместо хардкода, сиды, сохранение именно лучшего чекпоинта, `save_run` в конце.
+### 4. Fix loop
 
-## 4. Доработка
+Send findings to the same subagent via `SendMessage`, in English: what, where, expected. Repeat step 3. If it fails twice on the same bug, find the cause yourself and give an exact instruction.
 
-Найденные проблемы — отправить тому же субагенту через `SendMessage` (у него уже есть контекст), списком: что не так, где, как должно быть. Повторить шаг 3. Обычно хватает 1–2 кругов; если субагент упирается в один и тот же баг — разобраться самому и дать ему точное указание.
+### 5. Report to the user (Russian)
 
-## 5. Итог пользователю
+- What was implemented, key decisions, smoke result (duration), what remains.
+- Mandatory section «Усложнения»: every complication in the final code (from the spec or added by the subagent), one line each: what — why the goal needs it. If none: «Усложнений нет».
+- Next step is usually `/train`.
 
-Коротко: что реализовано, ключевые решения, результат smoke (время), что осталось. Предложить следующий шаг — обычно `/train`.
+## Mode: review
+
+For code the user wrote. No subagent, no edits.
+
+1. Scope: the argument, else uncommitted changes (`git diff -- lab-N/`), else files the user names.
+2. Run "Checks" from `CLAUDE.md`.
+3. Review against `task.md`, `.claude/rules/` and the ML checks from "Verify" above. Also check that the code fits the template contracts (`save_run`, `Config`, `tracking`) so `/train` and the notebook keep working.
+4. Report in Russian, most severe first: `файл:строка — проблема — как исправить`. Separate real bugs from style remarks. List complications without a reason tied to the goal as findings.
+5. Fix only on the user's request; then the fix goes through "One task" with a scope limited to the findings.

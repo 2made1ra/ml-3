@@ -1,12 +1,12 @@
-"""Собирает единый ipynb для сдачи: вместо `from src.x import ...` вставляет код модулей src/.
+"""Builds one submission ipynb: replaces `from src.x import ...` with the code of src/ modules.
 
-Запуск (из корня репо):
+Usage (from the repo root):
     uv run --project lab-N python .claude/skills/pack-submission/pack.py lab-N/lab-N.ipynb
 
-Правила, на которые опирается скрипт:
-- в ноутбуке и src импорты только вида `from src.<module> import name[, name as alias]`;
-- строки с `# dev-only` удаляются;
-- блоки `if __name__ == "__main__":` в модулях удаляются (в ноутбуке __name__ == "__main__").
+Conventions the script relies on:
+- notebook and src import only as `from src.<module> import name[, name as alias]`;
+- lines with `# dev-only` and `# user-owned` marker lines are removed;
+- `if __name__ == "__main__":` blocks in modules are removed (in a notebook __name__ == "__main__").
 """
 
 import argparse
@@ -18,6 +18,7 @@ from pathlib import Path
 import nbformat
 
 DEV_ONLY = "# dev-only"
+USER_OWNED = "# user-owned"
 SRC_MENTION = re.compile(r"\bsrc\.")
 
 
@@ -26,7 +27,7 @@ class PackError(Exception):
 
 
 def parse_code(source: str, where: str) -> ast.Module | None:
-    # IPython-магии и shell-команды не парсятся ast — заменяем пустыми строками, сохраняя номера строк
+    # ast cannot parse IPython magics and shell commands: blank them, keeping line numbers
     lines = [
         "" if line.lstrip().startswith(("%", "!")) else line
         for line in source.splitlines()
@@ -35,7 +36,7 @@ def parse_code(source: str, where: str) -> ast.Module | None:
         return ast.parse("\n".join(lines))
     except SyntaxError as e:
         if SRC_MENTION.search(source):
-            raise PackError(f"{where}: не удалось разобрать код ({e.msg}, строка {e.lineno})")
+            raise PackError(f"{where}: cannot parse code ({e.msg}, line {e.lineno})") from e
         return None
 
 
@@ -43,15 +44,15 @@ def src_imports(tree: ast.Module, where: str) -> list[ast.ImportFrom]:
     found = []
     for node in tree.body:
         if isinstance(node, ast.Import) and any(a.name.split(".")[0] == "src" for a in node.names):
-            raise PackError(f"{where}:{node.lineno}: используйте `from src.<module> import name`")
+            raise PackError(f"{where}:{node.lineno}: use `from src.<module> import name`")
         if isinstance(node, ast.ImportFrom):
             if node.level > 0 or node.module == "src":
-                raise PackError(f"{where}:{node.lineno}: используйте `from src.<module> import name`")
+                raise PackError(f"{where}:{node.lineno}: use `from src.<module> import name`")
             if node.module and node.module.startswith("src."):
                 found.append(node)
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("src.") and node not in found:
-            raise PackError(f"{where}:{node.lineno}: импорт из src должен быть на верхнем уровне")
+            raise PackError(f"{where}:{node.lineno}: src imports must be at top level")
     return found
 
 
@@ -69,7 +70,7 @@ def is_main_guard(node: ast.stmt) -> bool:
 
 
 def rewrite(source: str, tree: ast.Module, imports: list[ast.ImportFrom], drop: list[ast.stmt] = ()) -> str:
-    """Удаляет импорты из src (оставляя присваивания для alias) и блоки drop."""
+    """Removes src imports (keeping assignments for aliases) and the `drop` blocks."""
     lines = source.splitlines()
     replacements: dict[int, list[str]] = {}
     removed: set[int] = set()
@@ -91,7 +92,12 @@ def rewrite(source: str, tree: ast.Module, imports: list[ast.ImportFrom], drop: 
 
 
 def strip_dev_only(source: str) -> str:
-    return "\n".join(line for line in source.splitlines() if DEV_ONLY not in line)
+    """Removes `# dev-only` lines and `# user-owned` marker lines."""
+    return "\n".join(
+        line
+        for line in source.splitlines()
+        if DEV_ONLY not in line and line.strip() != USER_OWNED
+    )
 
 
 class Inliner:
@@ -101,14 +107,14 @@ class Inliner:
         self._visiting: set[str] = set()
 
     def module_cells(self, module: str) -> list[str]:
-        """Код модуля и его зависимостей из src (зависимости первыми), каждый модуль — один раз."""
+        """Code of a module and its src dependencies (dependencies first), each module once."""
         if module in self.done:
             return []
         if module in self._visiting:
-            raise PackError(f"циклический импорт в src: {module}")
+            raise PackError(f"circular import in src: {module}")
         path = self.src_dir / f"{module.replace('.', '/')}.py"
         if not path.exists():
-            raise PackError(f"нет файла {path}")
+            raise PackError(f"file not found: {path}")
         self._visiting.add(module)
         where = f"src/{path.relative_to(self.src_dir)}"
         source = strip_dev_only(path.read_text())
@@ -134,8 +140,8 @@ def pack(nb_path: Path, out_path: Path, clear_outputs: bool) -> list[str]:
             new_cells.append(cell)
             continue
         source = strip_dev_only(cell.source)
-        tree = parse_code(source, f"ячейка {idx}")
-        imports = src_imports(tree, f"ячейка {idx}") if tree else []
+        tree = parse_code(source, f"cell {idx}")
+        imports = src_imports(tree, f"cell {idx}") if tree else []
         for node in imports:
             for code in inliner.module_cells(node.module.removeprefix("src.")):
                 new_cells.append(nbformat.v4.new_code_cell(code))
@@ -150,7 +156,7 @@ def pack(nb_path: Path, out_path: Path, clear_outputs: bool) -> list[str]:
     nb.cells = new_cells
 
     warnings = [
-        f"ячейка {i}: осталось упоминание `src.`"
+        f"cell {i}: `src.` is still referenced"
         for i, c in enumerate(nb.cells)
         if c.cell_type == "code" and SRC_MENTION.search(c.source) and not c.source.startswith("# ---- src/")
     ]
@@ -162,18 +168,18 @@ def pack(nb_path: Path, out_path: Path, clear_outputs: bool) -> list[str]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("notebook", type=Path)
-    parser.add_argument("-o", "--output", type=Path, help="по умолчанию <lab>/submission/<имя>.ipynb")
-    parser.add_argument("--clear-outputs", action="store_true", help="очистить outputs (по умолчанию сохраняются)")
+    parser.add_argument("-o", "--output", type=Path, help="default: <lab>/submission/<name>.ipynb")
+    parser.add_argument("--clear-outputs", action="store_true", help="clear outputs (kept by default)")
     args = parser.parse_args()
 
     out = args.output or args.notebook.parent / "submission" / args.notebook.name
     try:
         warnings = pack(args.notebook, out, args.clear_outputs)
     except PackError as e:
-        sys.exit(f"Ошибка: {e}")
+        sys.exit(f"Error: {e}")
     for w in warnings:
-        print(f"Предупреждение: {w}")
-    print(f"Готово: {out}")
+        print(f"Warning: {w}")
+    print(f"Done: {out}")
 
 
 if __name__ == "__main__":

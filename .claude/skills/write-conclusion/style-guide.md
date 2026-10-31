@@ -1,43 +1,35 @@
-# Гайд по стилю выводов для лабораторных работ
+# Conclusion style guide
 
-Этот документ описывает стиль выводов, который использовался в прошлом семестре (репозиторий `~/dev/maga/second/ml-2`):
+Describes the author's voice in lab conclusions, based on last semester's notebooks (repo `~/dev/maga/second/ml-2`): `LAB_I/notebooks/lab_1.ipynb`, `LAB_II/notebooks/lab_2.ipynb`, `LAB_III/solution/lab_3.ipynb`.
 
-- `LAB_I/notebooks/lab_1.ipynb`
-- `LAB_II/notebooks/lab_2.ipynb`
-- `LAB_III/solution/lab_3.ipynb`
+Goal: new conclusions read like the author's own text — technically meaningful, not over-polished, with personal judgments, careful assumptions and concrete results. Conclusions are written in Russian; all Russian examples below are reference text, reuse their tone, not their content.
 
-Цель гайда - помогать писать новые выводы так, чтобы они были похожи на живой текст автора: технически осмысленный, но не слишком вылизанный, с личными оценками, осторожными допущениями и привязкой к конкретным результатам эксперимента.
+## 0. Corpus
 
-## 0. Наблюдения по корпусу
+- `lab_1` — the densest and most interpretive. Long conclusions, explicit model comparisons, causal links, evaluative words: `критическое переобучение`, `более здоровая картина обучения`, `универсального лидера нет`. Analysis is built on contrast: Random Forest vs CatBoost, global vs local methods, precision vs recall.
+- `lab_2` — drier, report-like. Short, states facts: configuration, metrics, confused classes. Almost no personal remarks. Use it as the model for short technical notes.
+- `lab_3` — the most alive. Explains the course of work: what failed first, why `Unknown Genre` was dropped, why some decisions were compromises. Honest phrases like `до меня дошло`, `мне стало лень`, `результат меня удивил`. Transfer such remarks carefully so not every conclusion becomes chatty.
 
-В трех лабораторных стиль немного отличается, и это важно учитывать при генерации новых выводов.
+Target mix: analytical density and model comparison from `lab_1`, honesty and "how I got here" from `lab_3`, `lab_2` for short technical notes.
 
-`lab_1.ipynb` - самый насыщенный и интерпретационный вариант. Выводы часто длинные, с явным сравнением моделей, причинно-следственными связками и оценочными словами: `критическое переобучение`, `более здоровая картина обучения`, `универсального лидера нет`. Здесь чаще всего встречается формат `> **Вывод:**`, а анализ строится вокруг контраста: Random Forest против CatBoost, глобальные методы против локальных, точность против полноты.
+## 1. Overall
 
-`lab_2.ipynb` - более сухой и отчетный. Текст короче, чаще фиксирует факт эксперимента: какая конфигурация получена, какие метрики достигнуты, какие классы путаются. Личных ремарок почти нет, зато сильнее ощущается структура учебного отчета. Этот вариант полезен, когда нужно написать аккуратный краткий вывод без лишней разговорности.
+Between a course report and a personal experiment review. Not a dry automatic summary: the author explains why the result is what it is, where the model fails, what that says about the data, what to try next.
 
-`lab_3.ipynb` - самый живой и авторский. Здесь появляются пояснения о ходе работы: что раньше не получалось, почему удален `Unknown Genre`, почему некоторые решения были компромиссными. Встречаются честные фразы вроде `до меня дошло`, `мне стало лень`, `результат меня удивил`. Именно эта лабораторная лучше всего передает человеческий голос автора, но такие ремарки нужно переносить аккуратно, чтобы не сделать каждый вывод слишком разговорным.
+Main principle: a conclusion interprets the result; it does not retell the plot or table.
 
-Итоговый стиль для новых выводов лучше собирать как смесь `lab_1` и `lab_3`: брать из `lab_1` аналитическую плотность и сравнение моделей, а из `lab_3` - честность, личные оговорки и объяснение того, как автор пришел к решению. `lab_2` использовать как ориентир для коротких технических фиксаций.
+A good conclusion answers four questions:
 
-## 1. Общий портрет стиля
+- what exactly happened;
+- why it could have happened;
+- what limitation or problem remains;
+- what can be done next.
 
-Стиль находится между учебным отчетом и личным разбором эксперимента. Текст не выглядит как сухая автоматическая сводка: автор не просто перечисляет метрики, а объясняет, почему получился именно такой результат, где модель ошибается, что это говорит о данных и что можно было бы попробовать дальше.
+## 2. Author's voice
 
-Главный принцип: вывод должен быть не пересказом графика или таблицы, а интерпретацией результата.
+Moderately personal, still report-like. First person fits choices, doubts, surprises and limitations of the experiment.
 
-Хороший вывод в этом стиле обычно отвечает на четыре вопроса:
-
-- что именно получилось;
-- почему это могло произойти;
-- какое ограничение или проблема осталась;
-- что с этим можно сделать дальше.
-
-## 2. Голос автора
-
-Использовать умеренно личный, но все еще отчетный тон. Автор может писать от первого лица, особенно когда речь идет о выборе, сомнении, неожиданном результате или ограничениях эксперимента.
-
-Подходящие обороты:
+Typical phrases:
 
 - `я отдаю свое предпочтение`
 - `в моем случае`
@@ -52,9 +44,9 @@
 - `по сути`
 - `если говорить по простому`
 
-Первое лицо не нужно вставлять в каждый абзац. Оно лучше работает как точечная человеческая ремарка после технического объяснения.
+Do not put first person in every paragraph. It works best as a single human remark after a technical explanation.
 
-Пример структуры:
+Example structure:
 
 ```markdown
 Модель показала ожидаемый рост качества по `macro F1`, однако полностью проблему дисбаланса это не решило. В целом результат выглядит логично: архитектура стала сильнее, но редкие классы все еще представлены слишком слабо.
@@ -62,106 +54,87 @@
 Если говорить по простому - модель стала увереннее на типичных примерах, но на пограничных случаях ей все еще не хватает данных.
 ```
 
-## 3. Степень формальности
+## 3. Formality
 
-Текст должен быть техническим, но не канцелярским. Нормально смешивать русские объяснения и англоязычные ML-термины: `baseline`, `feature engineering`, `transfer learning`, `backbone`, `fine-tuning`, `macro F1`, `accuracy`, `recall`, `precision`, `pipeline`.
+Technical, not bureaucratic. Mixing Russian explanations with English ML terms is normal: `baseline`, `feature engineering`, `transfer learning`, `backbone`, `fine-tuning`, `macro F1`, `accuracy`, `recall`, `precision`, `pipeline`.
 
-Формальность держится за счет фактов, метрик и терминов. Живость появляется за счет авторской оценки.
+Formality comes from facts, metrics and terms; liveliness from the author's judgment.
 
-Хорошо:
+Good:
 
 ```markdown
 CatBoost демонстрирует более здоровую картину обучения: модель не вызубрила тренировочную выборку и лучше пытается находить редкие классы. Однако эта попытка приводит к большему числу ложных срабатываний, поэтому precision на миноритарных оценках проседает.
 ```
 
-Слишком сухо:
+Too dry:
 
 ```markdown
 CatBoost имеет лучшие показатели recall, но худшие precision. Это обусловлено дисбалансом классов.
 ```
 
-Слишком искусственно:
+Too artificial:
 
 ```markdown
 Можно с уверенностью заключить, что предложенный подход блестяще демонстрирует высокую эффективность и открывает широкие перспективы дальнейших исследований.
 ```
 
-## 4. Типовая логика абзаца
+## 4. Paragraph logic
 
-Для выводов лучше использовать не список, а 1-3 связных абзаца. Типичный абзац строится так:
+Use 1–3 connected paragraphs, not a list. A typical paragraph:
 
-1. Сначала главный результат.
-2. Затем сравнение или контраст.
-3. Потом причина.
-4. В конце человеческая интерпретация или ограничение.
+1. Main result.
+2. Comparison or contrast.
+3. Cause.
+4. Human interpretation or limitation.
 
-Шаблон:
+Template:
 
 ```markdown
 [Модель/эксперимент/график] показал [главный результат]. Однако [ограничение или обратная сторона]. Это объясняется тем, что [причина, связанная с данными, архитектурой или метрикой]. В целом [авторская оценка результата].
 ```
 
-Пример:
+Example:
 
 ```markdown
 Оптимизация через Optuna подняла `F1 Macro`, но не решила кардинально проблему переобучения. Ограничение глубины деревьев дает свои плоды, однако разрыв между train и test все еще остается заметным. В целом это ожидаемо: при таком дисбалансе классов одного подбора гиперпараметров недостаточно.
 ```
 
-## 5. Что обязательно добавлять в вывод
+## 5. Required content
 
-### Конкретные числа
+### Concrete numbers
 
-Выводы почти всегда привязаны к метрикам, количествам объектов, названиям классов или признаков. Не писать обобщенно, если есть цифры.
+Tie conclusions to metrics, object counts, class or feature names. Never stay generic when numbers exist.
 
-Плохо:
+Bad:
 
 ```markdown
 Улучшенная модель стала заметно лучше базовой.
 ```
 
-Лучше:
+Better:
 
 ```markdown
 Переход от `baseline` с `test_acc=0.9077` к финальной модели с `test_acc=0.9436` показывает, что изменение архитектуры и режима обучения дало реальный прирост качества.
 ```
 
-### Сравнение
+### Comparison
 
-Автор часто объясняет результат через противопоставление:
+The author explains results through contrast:
 
-- `Random Forest` против `CatBoost`;
-- `CNN` против `ViT`;
-- train против test;
-- accuracy против macro F1;
-- глобальная интерпретация против локальной;
-- частые классы против редких.
+- `Random Forest` vs `CatBoost`;
+- `CNN` vs `ViT`;
+- train vs test;
+- accuracy vs macro F1;
+- global vs local interpretation;
+- frequent vs rare classes.
 
-Подходящие связки:
+Connectors: `в отличие от`, `при этом`, `однако`, `зато`, `напротив`, `с другой стороны`, `тем не менее`, `в свою очередь`.
 
-- `в отличие от`
-- `при этом`
-- `однако`
-- `зато`
-- `напротив`
-- `с другой стороны`
-- `тем не менее`
-- `в свою очередь`
+### Causal interpretation
 
-### Причинно-следственная интерпретация
+After the metrics, explain why. Usual causes: class imbalance, few rare examples, overlapping features, subjective labels, overfitting, architecture capacity, pretrained backbone, feature engineering quality, the optimized metric.
 
-После метрик нужно объяснять, почему они такие. Причины обычно лежат в:
-
-- дисбалансе классов;
-- малом числе редких примеров;
-- пересечении признаков;
-- субъективности разметки;
-- переобучении;
-- мощности архитектуры;
-- предобученном backbone;
-- качестве feature engineering;
-- выбранной метрике оптимизации.
-
-Типовые фразы:
+Typical phrases:
 
 - `Это объясняется тем, что...`
 - `Основной причиной стал...`
@@ -170,20 +143,13 @@ CatBoost имеет лучшие показатели recall, но худшие 
 - `Наличие такой доли ошибок говорит о...`
 - `Это делает результаты более содержательными...`
 
-## 6. Живые авторские ремарки
+## 6. Personal remarks
 
-Важная часть стиля - честные ремарки о ходе работы. Они делают текст похожим на настоящий отчет человека, который экспериментировал, ошибался и принимал решения.
+Honest remarks about the course of work make the text read like a real report by someone who experimented, failed and decided.
 
-Подходящие темы для таких ремарок:
+Topics: what failed first; why the setup changed; what result was surprising; where time ran out; what could have been done better; which option was a reasonable compromise.
 
-- что сначала не получалось;
-- почему пришлось изменить постановку;
-- какой результат удивил;
-- где не хватило времени;
-- что можно было бы сделать правильнее;
-- какой вариант выбран просто как разумный компромисс.
-
-Примеры формулировок:
+Examples:
 
 ```markdown
 Вообще, результат меня удивил: для такой небольшой сети я ожидал более скромного качества.
@@ -197,19 +163,13 @@ CatBoost имеет лучшие показатели recall, но худшие 
 В будущем хочу попробовать погонять Optuna дольше, когда разберусь с более стабильным обучением на GPU.
 ```
 
-Такие вставки нужно использовать дозированно. В каждом выводе достаточно 0-1 личной ремарки, иначе текст станет слишком разговорным.
+Use 0–1 remark per conclusion, otherwise the text becomes too conversational. Only remarks about things that actually happened (see `reports/iterations/`).
 
-## 7. Отношение к проблемам и ошибкам
+## 7. Problems and errors
 
-Автор не прячет слабые места модели. Ошибки описываются прямо, но с объяснением, почему они естественны.
+The author does not hide weaknesses. Errors are stated directly, with why they are natural: the model is not simply bad; the problem is often the data, the setup, imbalance or ambiguous labels; even wrong answers can be meaningfully explained.
 
-Типовая позиция:
-
-- модель ошибается не просто потому, что плохая;
-- часто проблема в данных, постановке, дисбалансе или неоднозначной разметке;
-- даже неправильные ответы могут быть содержательно объяснимыми.
-
-Хорошие формулировки:
+Examples:
 
 ```markdown
 Большинство промахов приходится на соседние классы, что ожидаемо из-за сильного пересечения их признакового пространства.
@@ -223,11 +183,11 @@ CatBoost имеет лучшие показатели recall, но худшие 
 Редкие классы модель практически не распознает, потому что в тестовой выборке слишком мало примеров для устойчивой оценки.
 ```
 
-## 8. Стиль предложений
+## 8. Sentences
 
-Предложения обычно средней длины. Автор любит связные объяснения, поэтому допустимы длинные фразы с `однако`, `при этом`, `поскольку`, `из-за чего`. Но важно не делать весь текст тяжелым: после длинного аналитического предложения можно поставить короткую человеческую фразу.
+Medium length. Long connected sentences with `однако`, `при этом`, `поскольку`, `из-за чего` are fine, but follow a long analytical sentence with a short human one.
 
-Характерные конструкции:
+Characteristic constructions:
 
 ```markdown
 В отличие от [модель A], [модель B] показала более [качество], поскольку [причина].
@@ -249,9 +209,9 @@ CatBoost имеет лучшие показатели recall, но худшие 
 Можно предположить, что [признак/фактор] будет сильно влиять на [результат].
 ```
 
-## 9. Форматирование в ноутбуке
+## 9. Notebook formatting
 
-Для локальных выводов после графиков и таблиц часто использовать формат:
+Local conclusion after a plot or table:
 
 ```markdown
 > **Вывод:**
@@ -259,86 +219,64 @@ CatBoost имеет лучшие показатели recall, но худшие 
 Текст вывода в 1-3 абзаца.
 ```
 
-Если вывод короткий, можно писать в одну строку:
+Short conclusion on one line:
 
 ```markdown
 > **Вывод:** сравнивая две базовые модели, я отдаю свое предпочтение CatBoost по одной простой причине - переобучение у RF слишком велико.
 ```
 
-Для финального раздела лучше использовать заголовки:
+Final section with headings:
 
 ```markdown
 ## 1. Обзор результатов
 
-...
-
 ## 2. Анализ ошибок
 
-...
-
 ## 3. Возможные направления улучшения
-
-...
 ```
 
-Внутри текста:
+In the text:
 
-- названия моделей, переменных, метрик и классов оформлять через backticks: `CatBoost`, `macro F1`, `Unknown Genre`;
-- числа писать прямо в тексте: `test accuracy 0.7743`, `99 из 320 наблюдений`;
-- для пар классов использовать стрелки или слэш: `Shirt -> T-shirt/top`, `landscape / cityscape`;
-- списки использовать только в итоговых рекомендациях или резюме, основной анализ писать абзацами.
+- models, variables, metrics and classes in backticks: `CatBoost`, `macro F1`, `Unknown Genre`;
+- numbers inline: `test accuracy 0.7743`, `99 из 320 наблюдений`;
+- class pairs with an arrow or slash: `Shirt -> T-shirt/top`, `landscape / cityscape`;
+- lists only in final recommendations or summaries; analysis in paragraphs.
 
-## 10. Орфография и естественная неидеальность
+## 10. Natural imperfection
 
-В исходных выводах встречается естественная неровность: повторы, разговорные вставки, иногда не до конца академичные обороты. Это часть живого впечатления, но специально добавлять опечатки не нужно.
+The source text has some unevenness: repetitions, colloquial inserts, not fully academic turns. Keep: slightly uneven but clear speech, personal judgments, colloquial connectors (`в целом`, `по сути`, `на самом деле`, `довольно`, `просто`). Do not keep: typos, wrong cases, accidental word repeats, run-on sentences without a period.
 
-Нужно сохранять:
+Rule: the text is a carefully proofread version of the author, not a deliberately damaged one.
 
-- неидеально гладкую, но понятную речь;
-- личные оценки;
-- немного разговорных связок;
-- фразы вроде `в целом`, `по сути`, `на самом деле`, `довольно`, `просто`.
+## 11. Avoid
 
-Не нужно специально сохранять:
-
-- опечатки;
-- неправильные падежи;
-- случайные повторы слов;
-- чрезмерно длинные фразы без точки.
-
-Лучшее правило: текст должен быть похож на аккуратно вычитанную версию автора, а не на намеренно испорченный текст.
-
-## 11. Чего избегать
-
-Не писать слишком нейтрально:
+Too neutral:
 
 ```markdown
 Были получены следующие результаты. Модель A имеет такие-то метрики. Модель B имеет такие-то метрики.
 ```
 
-Не делать текст рекламным:
+Advertising tone:
 
 ```markdown
 Модель продемонстрировала выдающуюся эффективность и полностью подтвердила правильность выбранного подхода.
 ```
 
-Не уходить в общие слова без фактов:
+Generic words without facts:
 
 ```markdown
 Результаты хорошие, но есть куда расти.
 ```
 
-Не перегружать вывод определениями:
+Definitions instead of interpretation (definitions belong to method sections):
 
 ```markdown
 Accuracy - это метрика, которая показывает долю правильных ответов. Precision - это...
 ```
 
-Определения можно давать в методических разделах, но вывод должен интерпретировать уже полученный результат.
+## 12. Templates
 
-## 12. Мини-шаблоны для новых выводов
-
-### После обучения модели
+### After training a model
 
 ```markdown
 > **Вывод:**
@@ -348,7 +286,7 @@ Accuracy - это метрика, которая показывает долю �
 В целом результат выглядит [ожидаемо/неожиданно/логично]: [человеческое объяснение]. Для дальнейшего улучшения стоит попробовать [следующий шаг].
 ```
 
-### После сравнения моделей
+### After comparing models
 
 ```markdown
 > **Вывод:**
@@ -358,7 +296,7 @@ Accuracy - это метрика, которая показывает долю �
 Мое предпочтение остается за [модель], потому что [простая причина, связанная с задачей]. В данной постановке важнее [критерий], чем [вторичный критерий].
 ```
 
-### После анализа ошибок
+### After error analysis
 
 ```markdown
 > **Вывод:**
@@ -368,7 +306,7 @@ Accuracy - это метрика, которая показывает долю �
 Если говорить по простому - модель не столько ломается на случайных примерах, сколько упирается в неоднозначность самих данных. Поэтому дальнейшее улучшение стоит искать через [данные/аугментацию/балансировку/другую постановку].
 ```
 
-### После интерпретации признаков
+### After feature/model interpretation
 
 ```markdown
 > **Вывод:**
@@ -378,18 +316,10 @@ Accuracy - это метрика, которая показывает долю �
 Такое расхождение естественно, потому что [метод A] оценивает [что именно], а [метод B] показывает [что именно]. По сути, модели находят разные пути в признаковом пространстве, но ключевая логика остается связанной с [главные факторы].
 ```
 
-## 13. Короткая инструкция для будущих запросов
+## 13. Checklist per conclusion
 
-Когда нужно написать новый вывод в этом стиле, можно просить так:
-
-```markdown
-Используй `/write-conclusion` и напиши вывод в моем стиле для следующего результата: ...
-```
-
-При генерации нового вывода нужно:
-
-- сначала выделить 2-4 конкретных факта из результата;
-- выбрать главный контраст или проблему;
-- объяснить причину;
-- добавить одну живую авторскую ремарку, если она уместна;
-- закончить практическим смыслом или возможным следующим шагом.
+- 2–4 concrete facts from the result;
+- one main contrast or problem;
+- its cause;
+- at most one personal remark, if it fits;
+- end with the practical meaning or a next step.

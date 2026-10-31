@@ -3,10 +3,11 @@ paths:
   - "**/reports/**"
 ---
 
-# Журнал экспериментов
+# Experiment log
 
-- Одна итерация = один файл `reports/iterations/vN.md` по шаблону из скилла `/log-iteration`. Номера сквозные внутри лабы, не перезаписываем старые итерации — только дополняем.
-- В итерации обязательно: что изменилось относительно предыдущей (diff конфига таблицей), машина (Mac/4090), ссылка на W&B run (или id MLflow run), метрики val и test, сравнение с лучшим результатом, гипотеза, почему так, следующий шаг.
-- Числа берём из `runs/vN/summary.json` / `history.csv` (основной источник), outputs ноутбука или трекера. Если числа нет — пишем `TODO: взять из run ...`, а не придумываем.
-- `reports/results.md` — сводная таблица всех итераций + отмеченная лучшая. Обновляется при каждом `/log-iteration`.
-- Эти файлы — сырьё для финальных выводов в ноутбуке, поэтому фиксируем и неудачи, и «почему отказались».
+- One iteration = one file `reports/iterations/vN.md`, template in `/log-iteration`. Numbering is continuous per lab. Never rewrite past iterations; only append.
+- `reports/results.md` is the summary table of all iterations with the best one marked. Updated on every `/log-iteration`.
+- Numbers come from `runs/vN/summary.json` and `history.csv` first, then notebook outputs or MLflow. A missing number is written as `TODO: взять из runs/vN`, never guessed.
+- Record every complication in the code with its reason (section «Усложнения»).
+- Record failures and rejected ideas with the reason: they are the raw material for the final conclusions.
+- These files are deliverables: write them in Russian.

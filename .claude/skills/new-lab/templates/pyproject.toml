@@ -12,7 +12,7 @@ dependencies = [
     "plotly",
     "kaleido",  # PNG-фолбэк для графиков (использует установленный Chrome)
     "tqdm",
-    "wandb",
+    "mlflow",
 ]
 
 [dependency-groups]
@@ -57,8 +57,8 @@ ignore = ["E501"]
 "*.ipynb" = ["E402", "F401", "B018"]  # импорты по ячейкам, последнее выражение — вывод ячейки
 
 [tool.ty.analysis]
-# опциональные бэкенды трекинга: ставятся через uv add только при переключении
-allowed-unresolved-imports = ["mlflow", "mlflow.**", "lightning", "lightning.**"]
+# lightning ставится через uv add, только если лаба на Lightning
+allowed-unresolved-imports = ["lightning", "lightning.**"]
 
 [tool.ty.rules]
 invalid-mutable-override = "ignore"  # ложное срабатывание на nn.Module.forward

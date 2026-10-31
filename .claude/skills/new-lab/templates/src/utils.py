@@ -11,6 +11,7 @@ def is_smoke() -> bool:
 
 
 def get_device() -> torch.device:
+    """Лучшее доступное устройство: cuda, затем mps, затем cpu."""
     if torch.cuda.is_available():
         return torch.device("cuda")
     if torch.backends.mps.is_available():
@@ -19,6 +20,7 @@ def get_device() -> torch.device:
 
 
 def seed_everything(seed: int) -> None:
+    """Фиксирует сиды random, numpy и torch."""
     random.seed(seed)
     np.random.seed(seed)  # noqa: NPY002 — глобальный сид для сторонних библиотек
     torch.manual_seed(seed)
@@ -27,4 +29,5 @@ def seed_everything(seed: int) -> None:
 
 
 def count_parameters(model: torch.nn.Module) -> int:
+    """Число обучаемых параметров модели."""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)

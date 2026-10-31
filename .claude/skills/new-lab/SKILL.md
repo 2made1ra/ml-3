@@ -1,39 +1,31 @@
 ---
 name: new-lab
-description: Создать каркас новой лабораторной по Deep Learning — разобрать задание (pdf/ipynb/md), сделать lab-N/ из шаблона с отдельным uv-окружением, заготовкой ноутбука по пунктам задания и чеклистом требований task/task.md. Код решения не пишет (для этого /code-lab). Использовать, когда пользователь начинает новую лабу или приносит новое задание.
-argument-hint: "<номер лабы> [путь к заданию]"
+description: Scaffold a new Deep Learning lab — read the assignment (pdf/ipynb/md), create lab-N/ from the template with its own uv environment, a notebook skeleton per requirement and the checklist task/task.md. Writes no solution code (that is /code-lab). Use when the user starts a new lab or brings a new assignment.
+argument-hint: "<lab number> [path to assignment]"
 ---
 
 # /new-lab
 
-Только каркас и разбор задания. Данные, модели и обучение — потом, через `/code-lab`.
+Scaffold and assignment analysis only. Data, models and training come later via `/code-lab`.
 
-## 1. Вводные
+## 1. Inputs
 
-- Номер лабы и файлы задания. Если `lab-N/` уже есть — посмотреть, что там (задание могли положить заранее), ничего не перезаписывать.
-- Прочитать задание целиком (PDF — Read с `pages`; ipynb — все ячейки, включая примеры кода преподавателя).
+- Lab number and assignment files. If `lab-N/` exists, inspect it (the assignment may already be there) and overwrite nothing.
+- Read the whole assignment: PDF via Read with `pages`, ipynb including the teacher's example code.
 
-## 2. Каркас
+## 2. Scaffold
 
-```
-lab-N/
-├── pyproject.toml   # из templates/, name = "lab-N"
-├── lab-N.ipynb      # заготовка по пунктам задания
-├── src/             # из templates/src/: config, utils, tracking, results, plots
-├── task/            # оригиналы задания + task.md
-├── runs/            # слепки ранов (появятся после обучения)
-├── reports/iterations/
-└── submission/
-```
+Target layout: see "Layout" in `CLAUDE.md`.
 
-- `cp -R .claude/skills/new-lab/templates/src lab-N/src`; `pyproject.toml` — с заменой `lab-N`; в `src/config.py` — `project = "dl-lab-N"`.
-- Оригиналы задания — в `lab-N/task/` (если лежат в другом месте — спросить: переместить или скопировать).
-- `cd lab-N && uv sync` — lock должен собраться для обеих платформ; проверить, что версии `torch` для darwin и linux в `uv.lock` совпадают.
-- `uv run ruff check src && uv run ty check src` — шаблон должен быть чистым.
+- `cp -R .claude/skills/new-lab/templates/src lab-N/src`; copy `templates/pyproject.toml` with `lab-N` replaced; set `project = "dl-lab-N"` in `src/config.py`.
+- Put the assignment originals in `lab-N/task/`. If they are elsewhere, ask: move or copy.
+- Create empty `runs/`, `reports/iterations/`, `submission/`.
+- `cd lab-N && uv sync`. Verify that `uv.lock` has the same torch version for darwin and linux.
+- Run the static checks from "Checks" in `CLAUDE.md` (no smoke yet: there is no `train.py`). The template must pass.
 
-## 3. task/task.md — чеклист требований
+## 3. task/task.md
 
-Главный документ лабы, по нему работают `/code-lab` и `/lab-review`.
+The lab's main document; `/code-lab` and `/lab-review` work from it. Written in Russian:
 
 ```markdown
 # Лабораторная N: <тема>
@@ -41,30 +33,28 @@ lab-N/
 Источник: task/<файл>
 
 ## Цель
-<1–3 предложения своими словами>
+<1–3 предложения>
 
 ## Требования
-- [ ] 1. <пункт задания, близко к тексту оригинала> — <что конкретно должно быть в ноутбуке>
-- [ ] 2. ...
+- [ ] 1. <пункт задания, близко к оригиналу> — <что должно быть в ноутбуке>
 
 ## Ограничения
-- <что запрещено/обязательно: архитектуры, библиотеки, метрики, датасет>
+- <запрещено/обязательно: архитектуры, библиотеки, метрики, датасет>
 
 ## Критерии оценки / сдача
 - <если есть в задании>
 
 ## Неясности
-- <что можно трактовать по-разному — обсудить с пользователем>
+- <что можно трактовать по-разному>
 ```
 
-## 4. Заготовка ноутбука lab-N.ipynb
+## 4. Notebook skeleton lab-N.ipynb
 
-- Первая ячейка: `%load_ext autoreload  # dev-only`, `%autoreload 2  # dev-only`.
-- Заголовок лабы и секции `## 1. ...` по пунктам `task.md`, в каждой — markdown-ячейка с формулировкой пункта, пустая code-ячейка и место под `> **Вывод:**`.
-- Секция «Итоговые выводы» в конце.
+- First cell: `%load_ext autoreload  # dev-only` and `%autoreload 2  # dev-only`.
+- Lab title, then one `## N. ...` section per `task.md` requirement: a markdown cell with the requirement, an empty code cell, a placeholder for `> **Вывод:**`.
+- A final section «Итоговые выводы».
 
-## 5. Финал
+## 5. Finish
 
-- Показать пользователю чеклист требований и неясности — неясности не решать молча.
-- Если W&B ещё не настроен — напомнить `uv run wandb login` на обеих машинах (ключ не вводить самому).
-- Следующий шаг: `/code-lab` (обычно начиная с данных и EDA).
+- Show the user the requirements checklist and the ambiguities. Never resolve ambiguities silently.
+- Next step: `/code-lab`, usually starting with data and EDA.

@@ -29,6 +29,7 @@ def plot_confusion(
     normalize: bool = True,
     title: str = "Confusion matrix (test)",
 ) -> go.Figure:
+    """Матрица ошибок по predictions.csv (по умолчанию нормирована по строкам)."""
     cm = confusion_matrix(
         predictions["y_true"], predictions["y_pred"], normalize="true" if normalize else None
     )
@@ -48,5 +49,7 @@ def plot_confusion(
 def plot_runs(table: pd.DataFrame, metric: str, title: str | None = None) -> go.Figure:
     """Сравнение ранов по метрике (таблица из compare_runs)."""
     fig = px.bar(table.reset_index(), x="run", y=metric, text_auto=".4f")
-    fig.update_layout(title=title or f"{metric} по итерациям", xaxis_title="run", yaxis_title=metric)
+    fig.update_layout(
+        title=title or f"{metric} по итерациям", xaxis_title="run", yaxis_title=metric
+    )
     return fig

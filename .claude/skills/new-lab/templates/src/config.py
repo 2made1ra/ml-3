@@ -5,10 +5,12 @@ from src.utils import is_smoke
 
 @dataclass
 class Config:
+    """Все гиперпараметры эксперимента."""
+
     # эксперимент
     project: str = "dl-lab-N"
     run_name: str = "v1"
-    tracker: str = "wandb"  # wandb | mlflow | none (можно переопределить env TRACKER)
+    tracker: str = "mlflow"  # mlflow | none (можно переопределить env TRACKER)
     seed: int = 42
 
     # данные
@@ -22,6 +24,7 @@ class Config:
     weight_decay: float = 1e-4
 
     def smoke_if_needed(self) -> "Config":
+        """При SMOKE=1 возвращает урезанный конфиг для быстрой проверки, иначе себя."""
         if not is_smoke():
             return self
         return replace(

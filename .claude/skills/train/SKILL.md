@@ -1,54 +1,52 @@
 ---
 name: train
-description: Подготовить запуск полного обучения итерации — оценить время на Mac через --benchmark, порекомендовать где учить (Mac M4 или PC с RTX 4090) и выдать точные команды для выбранной машины. Использовать, когда код готов и пора обучать, или пользователь спрашивает «где запускать», «сколько будет учиться».
+description: Prepare a full training run of an iteration — estimate Mac time via --benchmark, recommend a machine (Mac M4 or PC with RTX 4090) and give exact commands. Use when code is ready to train or the user asks where to train or how long it takes.
 argument-hint: "[lab-N] [vN] [mac|pc]"
 ---
 
 # /train
 
-Обучение всегда запускает пользователь, одной и той же командой на любой машине. Результат — `runs/vN/` (в git) + ран в W&B.
+The user always starts training, with the same command on either machine. Output: `runs/vN/` (committed) and a run in that machine's local MLflow.
 
-## 1. Подготовка
+## 1. Prepare
 
-- Имя итерации: следующее после последнего `runs/v*` / `reports/iterations/v*` (не `-smoke`), если пользователь не назвал своё.
-- Убедиться, что smoke проходит: `SMOKE=1 uv run python -m src.train --run smoke`.
+- Run name: next after the latest `runs/v*` (excluding `-smoke`), unless the user names one.
+- Smoke must pass (see "Checks" in `CLAUDE.md`).
 
-## 2. Оценка времени на Mac
+## 2. Estimate Mac time
 
-Если пользователь уже сказал, где учить, — оценку можно пропустить.
+Skip if the user already chose the machine.
 
 ```bash
 uv run python -m src.train --run vN --benchmark 30
 ```
 
-Берём `sec/step × steps/epoch × epochs`, плюс ~15–25% на валидацию. Для 4090 ориентир — в 5–15 раз быстрее M4/MPS (для маленьких моделей разница меньше: упирается в dataloader). Учесть память: на Mac 16 GB общей памяти — большой batch / большие модели могут не влезть или начать свопиться.
+Total ≈ `sec/step × steps/epoch × epochs` + 15–25% for validation. The 4090 is 5–15× faster than M4/MPS; less for small models bound by the dataloader. The Mac has 16 GB unified memory: a large batch or model may not fit or may swap.
 
-Рекомендация:
-- **Mac**, если оценка ≲ 15–20 минут и модель/батч комфортно влезают — экономим время на git push/pull и переключение машин;
-- **PC**, если дольше, если на Mac OOM/своп, или если это серия экспериментов/подбор гиперпараметров.
+Recommend:
+- **Mac** if the estimate is ≤ 15–20 min and memory fits: saves the push/pull round trip.
+- **PC** if longer, if the Mac OOMs or swaps, or for a series of runs or a hyperparameter search.
 
-Показать пользователю оценку и рекомендацию; выбор за ним.
+Show the estimate and the recommendation; the user chooses.
 
-## 3. Команды
+## 3. Commands
 
-Из папки `lab-N`.
+From `lab-N/`.
 
-**Mac:**
-```bash
-uv run python -m src.train --run vN
-```
-(или выполнить ячейку обучения в ноутбуке — она пишет тот же `runs/vN/`). После — `/log-iteration`.
+**Mac:** `uv run python -m src.train --run vN`, then `/log-iteration`.
 
-**PC (RTX 4090):** сначала на Mac закоммитить и запушить код (коммит — только с согласия пользователя: `feat(labN): ... для vN`). Затем на PC:
+**PC:** first commit and push the code on the Mac (only with the user's consent: `feat(labN): ...`). Then on the PC:
+
 ```bash
 git pull && cd lab-N && uv sync
 uv run python -m src.train --run vN
 git add runs/vN && git commit -m "run(labN): vN — <суть>" && git push
 ```
-Потом на Mac: `git pull` → `/log-iteration` → обновить ноутбук.
 
-Во время обучения на PC ноутбук и `src/` на Mac можно спокойно менять: PC коммитит только `runs/vN/`, конфликтов не будет.
+Live curves during training: `mlflow ui` on the PC. Then on the Mac: `git pull` → `uv run python -m src.sync_mlflow` → `/log-iteration`.
 
-## 4. Если что-то пошло не так
+The PC commits only `runs/vN/`, so editing the notebook and `src/` on the Mac meanwhile causes no conflicts.
 
-Пользователь приносит traceback / вывод с PC — разобрать причину (CUDA OOM → batch/AMP/gradient accumulation; расхождение версий → `uv sync`; NaN → lr/AMP) и исправить через `/code-lab`.
+## 4. Failures
+
+When the user brings a traceback from the PC: find the cause (CUDA OOM → batch size, AMP, gradient accumulation; version mismatch → `uv sync`; NaN → lr, AMP) and fix via `/code-lab`.

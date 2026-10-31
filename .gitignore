@@ -16,15 +16,19 @@ lab-*/artifacts/
 *.safetensors
 
 # Трекинг
-wandb/
 mlruns/
 mlflow.db
+mlartifacts/
 lightning_logs/
 lab-*/runs/*-smoke/
 lab-*/runs/smoke/
 
-# Секреты
+# Секреты (страховка: в репозитории их быть не должно)
 .env
+.env.*
+kaggle.json
+*.pem
+*.key
 
 # OS / IDE
 .DS_Store

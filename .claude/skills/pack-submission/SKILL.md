@@ -1,24 +1,19 @@
 ---
 name: pack-submission
-description: Собрать единый самодостаточный ipynb для сдачи из рабочего ноутбука лабы и модулей src/ (код модулей вставляется вместо импортов). Использовать, когда пользователь готовит лабу к сдаче, просит «собрать ноутбук», «один файл для сдачи».
+description: Build one self-contained submission ipynb from the lab notebook and src/ modules (module code replaces the imports). Use when the user prepares a lab for submission or asks for a single notebook file.
 argument-hint: "[lab-N] [--clear-outputs]"
 ---
 
 # /pack-submission
 
-1. Желательно перед этим прогнать `/lab-review` — если пользователь его не делал, предложить (но не навязывать).
-2. Собрать:
+1. If `/lab-review` was not run, suggest it once.
+2. Pack:
    ```bash
    uv run --project lab-N python .claude/skills/pack-submission/pack.py lab-N/lab-N.ipynb
    ```
-   Результат — `lab-N/submission/lab-N.ipynb`. Outputs сохраняются (графики и метрики из обучения на 4090 остаются); `--clear-outputs` — если пользователь хочет сдавать без них.
-3. Если скрипт падает с `Ошибка:` — это нарушение конвенций импорта (`.claude/rules/notebooks.md`). Исправить импорт в ноутбуке/src (с согласия пользователя), а не обходить скрипт.
-4. Проверить собранный ноутбук smoke-прогоном в scratchpad (не перезаписывая submission):
-   ```bash
-   cd lab-N && SMOKE=1 uv run jupyter nbconvert --to notebook --execute submission/lab-N.ipynb --output-dir <scratchpad>
-   ```
-   Ноутбук должен выполниться без `src/` рядом — для честности проверки скопировать его в пустую папку в scratchpad вместе с `runs/` (ноутбук читает слепки ранов) и запустить там. Данные для EDA скачаются в ту папку или нужно указать путь — смотреть по `data.py`.
-   Если преподавателю нужно, чтобы ноутбук перезапускался у него, — обсудить с пользователем: приложить `runs/` к сдаче или встроить слепки в ноутбук.
-5. Сообщить пользователю путь к файлу, предупреждения скрипта и результат smoke-прогона.
+   Output: `lab-N/submission/lab-N.ipynb`, outputs kept. `--clear-outputs` only if the user wants to submit without them.
+3. `Error:` from the script means an import convention is broken (`.claude/rules/notebooks.md`). Fix the import with the user's consent; never work around the script.
+4. Smoke-test: copy the packed notebook and `runs/` into an empty scratchpad folder (no `src/` next to it) and run `SMOKE=1 uv run --project <lab-N path> jupyter nbconvert --to notebook --execute lab-N.ipynb --output-dir out` there. EDA data downloads into that folder or needs a path — check `data.py`.
+5. Report to the user: file path, script warnings, smoke result. If the teacher must be able to re-run the notebook, discuss: attach `runs/` or embed the snapshots.
 
-Как работает упаковка: в месте первого `from src.x import ...` вставляются ячейки с кодом `src/x.py` и всех его зависимостей из `src` (каждый модуль один раз, зависимости первыми); `as`-алиасы превращаются в присваивания; строки `# dev-only` и блоки `if __name__ == "__main__":` удаляются.
+How it works: at the first `from src.x import ...`, cells with `src/x.py` and its `src` dependencies are inserted (each module once, dependencies first); `as` aliases become assignments; `# dev-only` lines, `# user-owned` markers and `if __name__ == "__main__":` blocks are removed.

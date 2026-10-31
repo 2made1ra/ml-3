@@ -1,73 +1,111 @@
-# ML-3: лабораторные по Deep Learning
+# ML-3: Deep Learning labs
 
-Репозиторий лабораторных работ курса Deep Learning (магистратура, семестр 3). Общение, документы, выводы и коммиты — на русском. ML-термины (`backbone`, `fine-tuning`, `macro F1`) не переводим.
+Lab assignments for a Deep Learning course (MSc, semester 3).
 
-## Машины
+## Language
 
-- **Mac M4, 16 GB (MPS)** — код, EDA, smoke-прогоны, ноутбук с графиками и выводами. Лёгкие обучения — тоже здесь.
-- **Linux (Omarchy) + RTX 4090 (CUDA)** — тяжёлые обучения. Код попадает туда через `git push` / `git pull`.
+| Context | Language |
+| --- | --- |
+| Chat with the user | Russian |
+| Agent-to-agent: Agent prompts, specs, `SendMessage`, subagent reports | English, always |
+| Instruction files: `CLAUDE.md`, `.claude/**` | English |
+| Deliverables: notebook markdown and conclusions, `task/task.md`, `reports/`, `README.md`, `docs/`, commit messages, comments/docstrings/printed messages in lab code | Russian |
 
-Где учить конкретную итерацию — решаем через `/train` по оценке времени. Всё, что зависит от устройства, — через `get_device()` (cuda → mps → cpu), никаких захардкоженных `"cuda"` / `.cuda()`.
+Keep ML terms in English (`backbone`, `fine-tuning`, `macro F1`) in any language.
 
-## Флоу
+## Communication style
 
-1. `/new-lab N` — каркас лабы, окружение, чеклист `task/task.md`.
-2. `/code-lab <что сделать>` — Opus решает и пишет спецификацию, субагент `lab-coder` (Sonnet) пишет код, затем ruff + ty + smoke и ревью.
-3. `/train` — оценка времени на Mac, выбор машины, команды. Обучение запускает пользователь: `uv run python -m src.train --run vN`.
-4. Обучение пишет слепок `runs/vN/` (history.csv, summary.json, predictions.csv) и ран в W&B. С PC слепок приходит через git.
-5. `/log-iteration` — журнал итерации; ноутбук строит графики из `runs/` (`load_run`, `plot_*`).
+Applies to chat, agent messages, instruction files and code.
+
+- Be concrete: name the file, function, number, command. No vague wording ("some issues", "might be worth", "various", "etc.").
+- Be short: one point per sentence, no restating, no filler, no preamble.
+- KISS: pick the simplest solution that meets the requirement. No abstractions, options or files "for the future".
+- DRY: one fact lives in one place. Reference the source (file, rule, skill) instead of copying it.
+- Exception: conclusions written by `/write-conclusion` follow the author's voice from its `style-guide.md`.
+
+## Machines
+
+- **Mac M4, 16 GB (MPS)**: code, EDA, smoke runs, notebook, light training.
+- **Linux (Omarchy) + RTX 4090 (CUDA)**: heavy training. Code gets there via `git push` / `git pull`.
+
+`/train` decides where an iteration trains. Device-dependent code uses `get_device()` only (cuda → mps → cpu).
+
+## Workflow
+
+1. `/new-lab N`: scaffold, environment, requirements checklist `task/task.md`.
+2. `/code-lab <goal>`: the main model decides and writes a spec, `lab-coder` writes code, the main model verifies.
+3. `/train`: time estimate, machine choice, commands. The user starts training.
+4. Training writes `runs/vN/` (committed) and a run in the machine's local MLflow.
+5. `/log-iteration`: iteration log. The notebook plots from `runs/`.
 6. `/write-conclusion` → `/lab-review` → `/pack-submission`.
 
-Ноутбук — эталон для сдачи: EDA, код, графики из `runs/`, выводы. Полное обучение внутри ноутбука не обязательно: он выполняется за секунды, читая `runs/`. Источник правды для чисел — `runs/*/summary.json`; W&B — витрина для мониторинга и сравнения.
+`runs/*/summary.json` is the source of truth for numbers. MLflow is only a dashboard. The notebook is the submission: it reads `runs/` and does not retrain.
 
-## Структура
+## Roles
+
+- **Main model**: decisions (task analysis, approach, experiments), specs, code review, result analysis, conclusions. Does not write `src/` code, except one-line fixes after review.
+- **`lab-coder` subagent (Sonnet, medium effort)**: writes code from a spec. Defined in `.claude/agents/lab-coder.md`.
+- **User**: runs full training, edits conclusions. Claude runs only smoke and `--benchmark`.
+- Numbers in conclusions and reports come only from `runs/`, cell outputs or MLflow. Never invent them.
+
+## Layout
 
 ```
 ml-3/
-├── CLAUDE.md
+├── CLAUDE.md, README.md, docs/backlog.md
 ├── .claude/{agents,rules,skills}
-└── lab-N/                  # одна лабораторная = одно окружение
-    ├── pyproject.toml      # свой uv-проект, uv.lock коммитим
-    ├── lab-N.ipynb         # ноутбук для сдачи: EDA, графики, выводы
-    ├── src/                # config, utils, tracking, results, plots (шаблон) + data, models, train
-    ├── task/               # исходное задание + task.md с чеклистом требований
-    ├── runs/vN/            # слепки ранов (в git; *-smoke игнорируются)
+└── lab-N/                  # one lab = one uv project
+    ├── pyproject.toml      # uv.lock is committed
+    ├── lab-N.ipynb         # submission notebook
+    ├── src/                # template: config, utils, tracking, results, plots, sync_mlflow; per lab: data, models, train
+    ├── task/               # original assignment + task.md
+    ├── runs/vN/            # run snapshots, committed (*-smoke ignored)
     ├── reports/            # iterations/vN.md, results.md
-    ├── submission/         # собранный единый ipynb (/pack-submission)
-    ├── data/               # датасеты (в .gitignore)
-    └── artifacts/          # чекпоинты (в .gitignore)
+    ├── submission/         # packed notebook
+    ├── data/               # datasets, gitignored
+    └── artifacts/          # checkpoints, gitignored
 ```
 
-Ноутбук лежит в корне лабы рядом с `src/` и `runs/`, поэтому `from src.models import Net` и относительные пути работают без хаков.
+The notebook sits next to `src/` and `runs/`, so `from src.x import y` and relative paths work without path hacks.
 
-## Окружение
+## Environment
 
-- Каждая лаба — отдельный uv-проект: `cd lab-N && uv sync`. Запуск только через `uv run` из папки лабы.
-- Python 3.13. torch: на macOS — PyPI (MPS), на Linux — индекс `cu132` (драйвер должен поддерживать CUDA ≥ 13.2 — `nvidia-smi`; версии torch для обеих платформ в uv.lock должны совпадать).
-- Зависимости — `uv add <pkg>` внутри лабы. `uv.lock` коммитим.
-- Проверки кода: `uv run ruff check src *.ipynb`, `uv run ruff format src`, `uv run ty check src`. Тесты не пишем.
+- Each lab is its own uv project. Run everything with `uv run` from `lab-N/`. Add dependencies with `uv add`.
+- Python 3.13. torch: PyPI on macOS (MPS), index `cu132` on Linux (driver must support CUDA ≥ 13.2). torch versions for both platforms in `uv.lock` must match.
+- Template: `.claude/skills/new-lab/templates/`.
 
-## Стек
+## Checks
 
-- **PyTorch** по умолчанию; **Lightning** — по желанию (решаем в `/code-lab`). Если задание требует другой стек — следуем заданию.
-- **Графики — Plotly**. matplotlib/seaborn только если иначе никак.
-- **Трекинг — W&B**, запасной MLflow. Только через `src/tracking.py`, бэкенд — переменная `TRACKER=wandb|mlflow|none`.
-- **Данные** — Kaggle (`kagglehub`) или HF `datasets`; скачивание в `src/data.py`, кэш в `lab-N/data/`.
+From `lab-N/`. No tests.
 
-## Роли
+```bash
+uv run ruff check src *.ipynb && uv run ruff format --check src && uv run ty check src
+SMOKE=1 uv run python -m src.train --run smoke
+```
 
-- **Основная модель** — центр решений: разбор задания, выбор подхода и экспериментов, спецификации, ревью кода, анализ результатов, выводы.
-- **`lab-coder` (Sonnet, medium)** — пишет код по спецификации. Код в `src/` основная модель сама не пишет, кроме мелких правок после ревью.
-- **Пользователь** запускает полные обучения (на Mac или PC) и правит выводы. Claude запускает только smoke и `--benchmark`.
-- Числа в выводах и отчётах — только из `runs/`, outputs ячеек или W&B. Никогда не выдумывать.
+## Stack
 
-## Воспроизводимость
+- PyTorch by default; Lightning if chosen in `/code-lab`. If the assignment requires another stack, follow the assignment.
+- Plots: Plotly. matplotlib/seaborn only when a library offers nothing else.
+- Tracking: MLflow, local per machine, one DB for all labs `~/.mlflow/mlflow.db` (lab = experiment). Backend via `TRACKER=mlflow|none`. Machines sync only through `runs/` in git + `uv run python -m src.sync_mlflow`. Never commit or sync the MLflow DB. VPS hub idea: `docs/backlog.md`.
+- Data: Kaggle (`kagglehub`) or HF `datasets`, downloaded in `src/data.py`, cached in `lab-N/data/`.
 
-- `seed_everything(cfg.seed)` в начале каждого запуска; все гиперпараметры — в `Config`, целиком уходят в трекер и `summary.json`.
-- Сплиты фиксированы сидом; test не используется для выбора модели и гиперпараметров.
+## Reproducibility
+
+- `seed_everything(cfg.seed)` at the start of every run. All hyperparameters live in `Config` and go to MLflow and `summary.json`.
+- Splits are seeded. Test data never drives model or hyperparameter selection.
+
+## Secrets
+
+- Secrets live in each tool's own store on each machine. Never in the repo: no `.env`, no `.env.example`, no config files with tokens.
+  - Kaggle: `~/.kaggle/` (`kaggle.json` or `access_token`, mode `600`).
+  - Hugging Face: `uvx --from huggingface_hub hf auth login` → `~/.cache/huggingface/token`.
+- Code never passes tokens explicitly (`token=...`, `os.environ[...]`); libraries find them.
+- Claude never asks for a secret in chat, never reads or prints token files, never enters keys. It gives the login command; the user runs it.
+- On 401/403 from `kagglehub`/`datasets`, check the login on that machine first.
 
 ## Git
 
-- Коммиты: `feat(lab1): ...`, `bug(lab1): ...`, `docs(lab1): ...`, `run(lab1): vN — ...` (результаты обучения), `chore: ...` — описание на русском.
-- Коммитить только по просьбе пользователя. Перед коммитом проверить, что не попали `data/`, `artifacts/`, `wandb/`, `mlruns/`.
-- Outputs ноутбуков коммитим (графики должны быть видны).
+- Commit types: `feat(labN)`, `bug(labN)`, `docs(labN)`, `run(labN): vN — ...` (training results), `chore`. Message in Russian.
+- Commit only when the user asks. Before committing, check that `data/`, `artifacts/`, `mlflow.db`, `mlruns/`, `mlartifacts/` are not staged.
+- Commit notebook outputs (plots must be visible).

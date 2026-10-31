@@ -3,16 +3,16 @@ paths:
   - "**/*.ipynb"
 ---
 
-# Работа с ноутбуками
+# Notebooks
 
-- Ноутбук — эталон для сдачи: EDA, конфиг, графики, таблицы, выводы. Классы моделей, датасеты и train loop живут в `src/`. Мелкий одноразовый код (график, табличка) — можно прямо в ячейке.
-- Результаты обучения ноутбук берёт из `runs/` (`load_run`, `compare_runs`, `plot_curves`, `plot_confusion`), а не обучает заново. Ячейка обучения может быть, но под флагом `RUN_TRAINING = False` по умолчанию.
-- Импорты из `src` — только в форме `from src.<module> import name[, name as alias]`. Не `import src.x` и не `from src import x`: иначе `/pack-submission` не сможет собрать единый ipynb.
-- Dev-only строки (например `%load_ext autoreload`, `%autoreload 2`) помечаем комментарием `# dev-only` в конце строки — при упаковке они вырезаются.
-- Редактировать ячейки через NotebookEdit, точечно. Не перезаписывать ноутбук целиком и не стирать outputs пользователя.
-- Smoke-проверку ноутбука делать в копию, а не в оригинал:
-  `SMOKE=1 uv run jupyter nbconvert --to notebook --execute lab-N.ipynb --output-dir <scratchpad>`
-- Ячейка с обучением (если есть) должна уважать `SMOKE` (`cfg = Config().smoke_if_needed()`).
-- Структура ноутбука следует пунктам задания из `task/task.md`: заголовок-секция на каждый пункт, нумерация как в задании.
-- Выводы — markdown-ячейки `> **Вывод:** ...` сразу после графика/таблицы, к которой относятся. Стиль — `/write-conclusion`.
-- Графики — Plotly. У каждого графика есть заголовок и подписи осей; для кривых обучения train и val на одном графике.
+- The notebook is the submission: EDA, config, plots, tables, conclusions. Models, datasets and training loops live in `src/`. One-off code (a plot, a table) may stay in a cell.
+- Code cells follow "Simplicity" and "Docstrings and comments" in `.claude/rules/training-code.md`.
+- Training results come from `runs/` (`load_run`, `compare_runs`, `plot_curves`, `plot_confusion`). A training cell is allowed only behind `RUN_TRAINING = False` and with `cfg = Config(...).smoke_if_needed()`.
+- Import from `src` only as `from src.<module> import name[, name as alias]`. `import src.x` and `from src import x` break `/pack-submission`.
+- Mark dev-only lines with a trailing `# dev-only` (e.g. `%autoreload 2`). Packing removes them.
+- A cell whose first line is `# user-owned` is the user's code: never edit it without an explicit request (see `.claude/rules/training-code.md`).
+- Edit cells with NotebookEdit, one cell at a time. Never rewrite the whole notebook or clear the user's outputs.
+- Smoke-test a copy, never the original: `SMOKE=1 uv run jupyter nbconvert --to notebook --execute lab-N.ipynb --output-dir <scratchpad>`.
+- Sections follow `task/task.md`: one `## N. ...` heading per requirement, same numbering.
+- A conclusion is a markdown cell `> **Вывод:** ...` right after the plot or table it describes. Written via `/write-conclusion`.
+- Plotly only. Every plot has a title and axis labels; train and val curves share one plot.

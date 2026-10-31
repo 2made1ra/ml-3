@@ -8,6 +8,7 @@
 """
 
 import json
+import platform
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
@@ -25,16 +26,18 @@ def save_run(
     predictions: pd.DataFrame | None = None,
     *,
     device: str | None = None,
-    tracker_url: str | None = None,
+    tracker_run: str | None = None,
 ) -> Path:
+    """Сохраняет слепок рана в runs/<run_name>/ и возвращает путь к папке."""
     run_dir = RUNS_DIR / cfg.run_name
     run_dir.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(history).to_csv(run_dir / "history.csv", index=False)
     summary = {
         "run_name": cfg.run_name,
         "finished_at": datetime.now().isoformat(timespec="seconds"),
+        "host": platform.node(),
         "device": device,
-        "tracker_url": tracker_url,
+        "tracker_run": tracker_run,
         "metrics": metrics,
         "config": asdict(cfg),
     }
@@ -46,16 +49,19 @@ def save_run(
 
 @dataclass
 class Run:
+    """Загруженный слепок рана."""
+
     name: str
     history: pd.DataFrame
     metrics: dict
     config: dict
     device: str | None
-    tracker_url: str | None
+    tracker_run: str | None
     predictions: pd.DataFrame | None
 
 
 def load_run(name: str) -> Run:
+    """Загружает слепок рана из runs/<name>/."""
     run_dir = RUNS_DIR / name
     if not run_dir.exists():
         raise FileNotFoundError(f"{run_dir} не найден — сделан ли git pull после обучения?")
@@ -67,7 +73,7 @@ def load_run(name: str) -> Run:
         metrics=summary["metrics"],
         config=summary["config"],
         device=summary.get("device"),
-        tracker_url=summary.get("tracker_url"),
+        tracker_run=summary.get("tracker_run"),
         predictions=pd.read_csv(pred_path) if pred_path.exists() else None,
     )
 

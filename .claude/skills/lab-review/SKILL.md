@@ -1,41 +1,37 @@
 ---
 name: lab-review
-description: Проверить лабораторную перед сдачей — сверить ноутбук с чеклистом task/task.md, найти пропущенные пункты, утечки данных, проблемы воспроизводимости, графики без подписей, выводы без чисел. Использовать перед сдачей, перед /pack-submission или когда просят «проверь лабу», «всё ли готово».
+description: Review a lab before submission — check the notebook against task/task.md, find missing requirements, data leakage, reproducibility issues, unlabeled plots, conclusions without numbers. Use before submitting, before /pack-submission, or when the user asks whether the lab is ready.
 argument-hint: "[lab-N]"
 ---
 
 # /lab-review
 
-Только проверка и отчёт — ничего не исправлять без согласия пользователя.
+Review and report only. Fix nothing without the user's consent.
 
-## 1. Прочитать
+## 1. Read
 
-- `task/task.md` и оригинал задания в `task/` (на случай, если чеклист что-то упустил).
-- `lab-N.ipynb` целиком, включая outputs; `src/*.py`; `reports/results.md`.
+- `task/task.md` and the original assignment in `task/` (the checklist may miss something).
+- `lab-N.ipynb` in full, with outputs; `src/*.py`; `reports/results.md`.
 
-## 2. Проверить
+## 2. Check
 
-**Требования задания** — по каждому пункту `task.md`: выполнен / частично / нет, со ссылкой на ячейку или секцию. Ограничения задания (запрещённые модели, обязательные метрики, датасет) соблюдены.
+**Requirements**: each `task.md` item is done / partial / missing, with a cell or section reference. Assignment constraints (forbidden models, required metrics, dataset) are met.
 
-**Корректность ML**
-- Нет утечки: нормализация/скейлеры/словари/аугментации считаются только по train; test не участвует в early stopping, подборе гиперпараметров и выборе лучшей модели.
-- `model.eval()` + `torch.no_grad()`/`inference_mode` на валидации и тесте; `model.train()` возвращается.
-- Метрика соответствует задаче (дисбаланс → macro F1 / balanced accuracy, а не только accuracy).
-- Финальные числа в ноутбуке получены лучшим чекпоинтом, а не последней эпохой (если заявлено иное).
+**ML correctness**
+- No leakage: scalers, vocabularies, normalization fitted on train only; test is not used for early stopping, tuning or model selection.
+- `model.eval()` + `no_grad`/`inference_mode` on val and test; `model.train()` restored.
+- The metric fits the task (imbalance → macro F1 / balanced accuracy, not accuracy alone).
+- Reported numbers come from the best checkpoint, not the last epoch, unless stated otherwise.
 
-**Воспроизводимость**
-- `seed_everything`, фиксированный сплит, `get_device()` без хардкода `cuda`.
-- Ноутбук выполнен сверху вниз: номера `execution_count` монотонны, нет ячеек с ошибками в outputs, нет ячеек, зависящих от удалённого кода.
-- Нет остатков `SMOKE`-прогона в итоговых outputs (подозрительно маленькие числа эпох/данных, `-smoke` в run_name).
-- Все раны, которые грузит ноутбук (`load_run(...)`), есть в `runs/` и закоммичены; числа в ноутбуке совпадают с `runs/*/summary.json`; итоговый ран — лучший по val, а не по test.
+**Reproducibility**
+- Conventions from `.claude/rules/training-code.md` hold: seeding, seeded splits, `get_device()`.
+- The notebook ran top to bottom: monotonic `execution_count`, no error outputs, no cells depending on deleted code.
+- No smoke leftovers in outputs (tiny epoch/data counts, `-smoke` run names).
+- Every `load_run(...)` target exists in `runs/` and is committed; notebook numbers match `runs/*/summary.json`; the final run is the best on val, not on test.
 
-**Оформление**
-- Каждый график Plotly — с заголовком и подписями осей; кривые train/val.
-- После каждого ключевого графика/таблицы есть `> **Вывод:**`; выводы содержат конкретные числа и совпадают с outputs (сверить числа!).
-- Финальный раздел выводов есть и отвечает на вопросы задания.
-- Импорты из `src` в форме, которую понимает `/pack-submission` (`from src.x import ...`).
+**Presentation**: conventions from `.claude/rules/notebooks.md` hold (plot titles and labels, `> **Вывод:**` after key plots, `src` import form). Numbers in conclusions match outputs — check each one. The final conclusions section answers the assignment's questions.
 
-## 3. Отчёт
+## 3. Report (Russian)
 
 ```
 ## Готовность: <готово / почти / нет>
@@ -49,4 +45,4 @@ argument-hint: "[lab-N]"
 3. [косметика] ...
 ```
 
-В конце спросить, что исправить; после исправлений — предложить `/pack-submission`.
+Ask what to fix. After fixes, propose `/pack-submission`.
