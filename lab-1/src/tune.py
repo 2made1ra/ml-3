@@ -7,6 +7,7 @@ from dataclasses import replace
 import optuna
 
 from src.config import Config
+from src.tracking import init_tracker
 from src.train import fit
 
 
@@ -24,9 +25,11 @@ def objective(trial: optuna.Trial, base: Config) -> float:
         base,
         **suggest(trial),
         run_name=f"{base.run_name}-t{trial.number}",
-        tracker="none",
     )
-    _, _, metrics = fit(cfg)
+    tracker = init_tracker(cfg, nested=True)
+    _, _, metrics = fit(cfg, tracker)
+    tracker.summary(metrics)
+    tracker.finish()
     return metrics["val_f1_macro"]
 
 
@@ -47,6 +50,15 @@ if __name__ == "__main__":
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=base.seed),
     )
+    parent = init_tracker(base)
     study.optimize(lambda trial: objective(trial, base), n_trials=args.trials)
+    parent.summary(
+        {
+            "best_val_f1_macro": study.best_value,
+            **{f"best_{k}": v for k, v in study.best_params.items()},
+            "n_trials": len(study.trials),
+        }
+    )
+    parent.finish()
     print(f"Лучшее значение val F1 macro: {study.best_value:.4f}")
     print(f"Лучшие параметры: {study.best_params}")

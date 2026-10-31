@@ -1,5 +1,6 @@
 """Wine Quality (red): загрузка, производные признаки, разбиение train/val/test."""
 
+import hashlib
 import shutil
 from pathlib import Path
 
@@ -59,6 +60,16 @@ def load_splits(seed: int = 42) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
     val = X_val.assign(quality=y_val)
     test = X_test.assign(quality=y_test)
     return train, val, test
+
+
+def fingerprint(train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame) -> dict:
+    """Отпечаток данных: датасет, sha256 CSV и sha256 отсортированных индексов строк каждого split."""
+    split_hash = {
+        name: hashlib.sha256(str(sorted(df.index)).encode()).hexdigest()
+        for name, df in [("train", train), ("val", val), ("test", test)]
+    }
+    csv_hash = hashlib.sha256((DATA_DIR / "winequality-red.csv").read_bytes()).hexdigest()
+    return {"source": DATASET, "csv_sha256": csv_hash, "split_sha256": split_hash}
 
 
 def to_xy(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:

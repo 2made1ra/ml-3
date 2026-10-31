@@ -16,8 +16,9 @@ from sklearn.metrics import balanced_accuracy_score, f1_score, roc_auc_score
 from sklearn.utils.class_weight import compute_class_weight
 
 from src.config import Config
-from src.data import CLASSES, TARGET, load_splits, to_xy
-from src.results import save_run
+from src.data import CLASSES, DATASET, TARGET, fingerprint, load_splits, to_xy
+from src.plots import plot_confusion
+from src.results import check_new_run, save_run
 from src.tracking import init_tracker
 from src.utils import get_device, seed_everything
 
@@ -83,8 +84,12 @@ def train_catboost(cfg: Config) -> dict:
         proba = model.predict_proba(X)
         pred = proba.argmax(axis=1)
         metrics.update({f"{name}_{k}": v for k, v in compute_metrics(y, pred, proba).items()})
+    start = time.time()
+    model.predict_proba(X_test)
+    inference_time = time.time() - start
     metrics.update(
         best_iteration=model.get_best_iteration(),
+        inference_time_sec=inference_time,
         train_time_sec=train_time,
         n_train=len(train_df),
         n_val=len(val_df),
@@ -100,7 +105,23 @@ def train_catboost(cfg: Config) -> dict:
     for i, c in enumerate(CLASSES):
         predictions[f"prob_{c}"] = proba[:, i]
 
-    save_run(cfg, history, metrics, predictions, device="cpu", tracker_run=tracker.run_ref)
+    tracker.log_inputs({"train": train_df, "val": val_df, "test": test_df}, source=DATASET)
+    run_dir = save_run(
+        cfg,
+        history,
+        metrics,
+        predictions,
+        device="cpu",
+        tracker_run=tracker.run_ref,
+        data=fingerprint(train_df, val_df, test_df),
+    )
+    tracker.log_artifacts(run_dir)
+    tracker.log_figure(
+        plot_confusion(
+            predictions, labels=[str(c) for c in CLASSES], title=f"{cfg.run_name}: test"
+        ),
+        "confusion_test.html",
+    )
     tracker.finish()
     print(
         f"val F1 macro: {metrics['val_f1_macro']:.4f}, test F1 macro: {metrics['test_f1_macro']:.4f}"
@@ -247,10 +268,17 @@ def train_nn(cfg: Config) -> dict:
     train_df, val_df, test_df = load_splits(cfg.seed)
     test_frame = nn_frame(test_df)
     y_test = test_frame[TARGET].to_numpy()
+    start = time.time()
     proba = predict_proba(model, test_frame)
+    inference_time = time.time() - start
     pred = proba.argmax(axis=1)
     metrics.update({f"test_{k}": v for k, v in compute_metrics(y_test, pred, proba).items()})
-    metrics.update(n_train=len(train_df), n_val=len(val_df), n_test=len(test_df))
+    metrics.update(
+        inference_time_sec=inference_time,
+        n_train=len(train_df),
+        n_val=len(val_df),
+        n_test=len(test_df),
+    )
     tracker.summary(metrics)
     model.save_model(f"artifacts/{cfg.run_name}_best")
 
@@ -258,8 +286,22 @@ def train_nn(cfg: Config) -> dict:
     for i, c in enumerate(CLASSES):
         predictions[f"prob_{c}"] = proba[:, i]
 
-    save_run(
-        cfg, history, metrics, predictions, device=get_device().type, tracker_run=tracker.run_ref
+    tracker.log_inputs({"train": train_df, "val": val_df, "test": test_df}, source=DATASET)
+    run_dir = save_run(
+        cfg,
+        history,
+        metrics,
+        predictions,
+        device=get_device().type,
+        tracker_run=tracker.run_ref,
+        data=fingerprint(train_df, val_df, test_df),
+    )
+    tracker.log_artifacts(run_dir)
+    tracker.log_figure(
+        plot_confusion(
+            predictions, labels=[str(c) for c in CLASSES], title=f"{cfg.run_name}: test"
+        ),
+        "confusion_test.html",
     )
     tracker.finish()
     print(
@@ -270,6 +312,7 @@ def train_nn(cfg: Config) -> dict:
 
 def train(cfg: Config) -> dict:
     """Обучение выбранной cfg.model."""
+    check_new_run(cfg.run_name)
     return train_catboost(cfg) if cfg.model == "catboost" else train_nn(cfg)
 
 
