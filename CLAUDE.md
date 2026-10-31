@@ -28,7 +28,7 @@ Applies to chat, agent messages, instruction files and code.
 - **Mac M4, 16 GB (MPS)**: code, EDA, smoke runs, notebook, light training.
 - **Linux (Omarchy) + RTX 4090 (CUDA)**: heavy training. Code gets there via `git push` / `git pull`.
 
-`/train` decides where an iteration trains. Device-dependent code uses `get_device()` only (cuda → mps → cpu).
+`/train` decides where an iteration trains. Device-dependent code uses `get_device()` only (cuda → mps → cpu); libraries with their own device choice get it passed explicitly (`.claude/rules/training-code.md`).
 
 ## Workflow
 

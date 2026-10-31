@@ -78,7 +78,8 @@ Do not trust the report. From `lab-N/`, run "Checks" from `CLAUDE.md`; for a bug
 - simplicity and docstrings: every item of the "Simplicity" and "Docstrings and comments" sections of `.claude/rules/training-code.md` holds. Anything not required (extra options, abstractions, defensive code, long docstrings) is a finding to fix, not a style nit;
 - no leakage: normalization stats and vocabularies from train only; test never selects the model;
 - `model.eval()` + `inference_mode` on val/test; metric aggregation is correct (per sample vs per batch, macro vs micro);
-- the best checkpoint is the one evaluated and saved; `save_run` is called.
+- the best checkpoint is the one evaluated and saved; `save_run` is called;
+- device: the smoke run's `summary.json` shows `mps` on the Mac (`cuda` on the PC). `cpu` only for gradient boosting or with a justified fallback (`.claude/rules/training-code.md`, "Device").
 
 Sanity checks — once per new model, loss or data pipeline (not for hyperparameter-only changes). Run them as a one-off script in the scratchpad, adapted to the lab; it adds no lab code. From `lab-N/`: `PYTHONPATH=. uv run python <scratchpad>/sanity.py`.
 

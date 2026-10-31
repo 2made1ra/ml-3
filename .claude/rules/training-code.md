@@ -47,7 +47,9 @@ Lab code is read by a student and a teacher. Applies to `src/` and notebook code
 
 ## Conventions
 
-- Device: `get_device()` from `src/utils.py` only. No `.cuda()` or `device="cuda"`. AMP: `torch.autocast(device_type=device.type, ...)`; bf16 on CUDA, fp16 on MPS only if verified.
+- Device: `get_device()` from `src/utils.py` only (cuda → mps → cpu). No `.cuda()` or `device="cuda"`. AMP: `torch.autocast(device_type=device.type, ...)`; bf16 on CUDA, fp16 on MPS only if verified.
+  - Libraries that pick a device themselves get it from `get_device()` explicitly; never rely on their auto-detection, some skip MPS. Lightning / `pytorch_tabular`: `accelerator` = `"gpu"` for cuda, `"mps"`, `"cpu"`. sklearn-style wrappers: `device=get_device()`.
+  - CPU on a Mac or the PC only for a model that fails or gives wrong results on MPS/CUDA (unsupported op, NaN). Then that model alone runs on CPU, with a `# усложнение:` comment naming the error. Gradient boosting (CatBoost, LightGBM, XGBoost) runs on CPU on the Mac: they have no MPS support.
 - Datasets are defined in `src/data.py`: on macOS, `DataLoader(num_workers>0)` cannot pickle classes defined in a notebook. `pin_memory=True` on CUDA only.
 - All hyperparameters live in `Config` (`src/config.py`). `smoke_if_needed()` shrinks epochs, batch and data under `SMOKE=1` and sets `tracker="none"`.
 - Logging goes through `src/tracking.py` only; no direct `mlflow.*` calls elsewhere. The full `asdict(cfg)` is logged; final metrics go through `tracker.summary()` (prefix `final/`).
