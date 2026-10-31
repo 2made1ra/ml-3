@@ -30,7 +30,7 @@ Review and report only. Fix nothing without the user's consent.
 - Final runs have `git_dirty: false` in `summary.json`; dataset versions are pinned in `data.py`.
 - Every `load_run(...)` target exists in `runs/` and is committed; notebook numbers match `runs/*/summary.json`; the final run is the best on val, not on test.
 
-**Presentation**: conventions from `.claude/rules/notebooks.md` hold (plot titles and labels, `> **Вывод:**` after key plots, `src` import form). Numbers in conclusions match outputs — check each one. The final conclusions section answers the assignment's questions.
+**Presentation**: conventions from `.claude/rules/notebooks.md` hold (plot titles and labels, `> **Вывод:**` after key plots, `src` import form). Numbers in conclusions and `reports/` match their sources: run the `numbers-checker` agent (Haiku) on every `> **Вывод:**` cell, `reports/iterations/*.md` and `reports/results.md`, with all `runs/` as Sources; confirm each mismatch yourself before reporting it. The final conclusions section answers the assignment's questions.
 
 ## 3. Report (Russian)
 

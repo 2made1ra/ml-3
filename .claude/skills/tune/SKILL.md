@@ -49,6 +49,8 @@ On the PC, then: `git add runs/tune/<name>.db && git commit -m "run(labN): tune 
 - importance: `optuna.importance.get_param_importances(study)`; drop unimportant parameters from the next round;
 - robustness: if the top trials differ by noise only, take a round value from the good region rather than the single best trial.
 
+Decide with the user: show best value and params, importances, the boundary and robustness checks, the top 5 trials; then one AskUserQuestion with your recommendation first — fix the values, widen the range and resume, or another round on other parameters. The choice feeds the next hypothesis batch (`/lab-flow`, «Hypotheses»).
+
 In the notebook's tuning section: `optuna.visualization.plot_optimization_history`, `plot_slice`, `plot_param_importances` (Plotly; import `src.plots` first so the PNG fallback applies).
 
 ## 5. Apply

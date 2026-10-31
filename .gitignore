@@ -35,3 +35,6 @@ secrets.yaml
 # OS / IDE
 .DS_Store
 .claude/settings.local.json
+
+# Временная папка pytorch_tabular
+lab-*/.pt_tmp/

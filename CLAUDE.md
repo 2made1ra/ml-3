@@ -40,7 +40,7 @@ Applies to chat, agent messages, instruction files and code.
 6. `/log-iteration`: iteration log. The notebook plots from `runs/`.
 7. `/write-conclusion` → `/lab-review` → `/pack-submission`; `/prep-defense` before the defense.
 
-`/lab-flow N` drives steps 1–7 itself: it calls the skills in order and asks the user before every step.
+`/lab-flow N` drives steps 1–7 itself: it calls the skills in order, one stage per fresh session (state lives in files; `/continue-lab` resumes), lets the user pick experiment hypotheses, and otherwise asks only at critical points.
 
 `runs/*/summary.json` is the source of truth for numbers. MLflow is only a dashboard. The notebook is the submission: it reads `runs/` and does not retrain.
 
@@ -53,7 +53,8 @@ Local files are the source of truth for tasks: `task/task.md` (stages, their con
 
 - **Main model**: decisions (task analysis, approach, experiments), specs, code review, result analysis, conclusions. Does not write `src/` code, except one-line fixes after review.
 - **`lab-coder` subagent (Sonnet, medium effort)**: writes code from a spec. Defined in `.claude/agents/lab-coder.md`.
-- **User**: edits conclusions; chooses who starts each full training or tuning run. Claude gives the command and asks; it never starts a full run without that answer. Claude starts runs only on the Mac, in the background; PC runs are the user's. Smoke and `--benchmark` Claude runs itself.
+- **`numbers-checker` subagent (Haiku)**: read-only check of numbers in conclusions and reports against `runs/`, from `/write-conclusion` and `/lab-review`. Defined in `.claude/agents/numbers-checker.md`.
+- **User**: picks experiment hypotheses from Claude's proposals; edits conclusions; chooses who starts each full training or tuning run. Claude gives the command and asks; it never starts a full run without that answer. Exception: under `/lab-flow`, Mac runs ≤ 20 min Claude starts itself (`.claude/skills/lab-flow/SKILL.md`, section 2). Claude starts runs only on the Mac, in the background; PC runs are the user's. Smoke and `--benchmark` Claude runs itself.
 - Numbers in conclusions and reports come only from `runs/`, cell outputs or MLflow. Never invent them.
 - A model, library or approach the user chose does not work: stop and decide with the user. Never switch to a fallback alone.
 
