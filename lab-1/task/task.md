@@ -35,6 +35,9 @@
 - 2026-10-31, этап 3: lr и weight decay подобраны Optuna (`src/tune.py`, 20 trials на модель, `runs/tune/`): GANDALF lr 5e-3 / wd 1e-5 (v4), FT-Transformer lr 4e-3 / wd 5e-6 (v5). `Config.lr` общий для двух моделей, поэтому значения передаются в CLI: `uv run python -m src.train --run vN --model <m> --lr .. --weight-decay ..`. Weight decay дальше не тюним (importance у GANDALF 0.02). У FT-Transformer lr ≥ 6.9e-3 расходится.
 - 2026-10-31, этап 3, план гипотез (≥ 3 на модель): 1) lr — v4, v5 готовы; 2) веса классов в CrossEntropy; 3) размер модели и dropout. В ноутбуке 1.4 v4/v5 ещё не показаны — добавить на `/write-conclusion` этапа.
 - 2026-10-31, этап 3: гипотеза 2 (веса классов balanced) не подтвердилась: v6 GANDALF 0.2307, v7 FT-Transformer 0.2010 (расходится при lr 4e-3). Гипотеза 3 — на лучших конфигурациях без весов (v4, v5) через `--set` (`src/train.py`), например `--set ft_embed_dim=16 --set ft_ff_dropout=0.3`.
+- 2026-10-31, этап 3: гипотеза 3 (ёмкость и dropout) — v8 GANDALF dropout 0.2: val loss лучше, F1 macro 0.2875 ≈ v4; v9 FT-Transformer embed 16 / 3 блока / ff_dropout 0.3: 0.2433, переобучение с эпохи 7 при lr от большой модели. Критерий «≥ 3 гипотезы на модель» выполнен; лучшие по val: v4, v5. Следующий шаг — `/write-conclusion` 1.4, затем закрытие этапа.
+- 2026-10-31, этап 4: финальные модели части I — v10 / v11 / v12 (перезапуски v1 / v4 / v5 на чистом коде). Каждый ран уже содержит `importance.csv` и `manual.csv` (12 объектов из `src/data.py: MANUAL_OBJECTS`), поэтому на этапе 5 переобучение не нужно: остаются ячейки ноутбука и вывод. v12 не повторил v5 (val 0.2892 против 0.2933, MPS) — это оценка шума ±0.004.
+- 2026-10-31, этап 4: встроенный importance FT-Transformer в `pytorch_tabular` считается по последнему forward-батчу (64 объекта test) и помечен в библиотеке как непроверенный — в выводах только с оговоркой; для сравнения моделей — permutation importance.
 
 ## Оформление и сдача
 
@@ -82,12 +85,12 @@
 - Результаты: lr: v4 (GANDALF, val F1 macro 0.2907), v5 (FT-Transformer, 0.2933); studies `runs/tune/tune-gandalf-lr.db`, `runs/tune/tune-ft-lr.db`. Веса классов: v6 (GANDALF, 0.2307), v7 (FT-Transformer, 0.2010) — хуже. Ёмкость/dropout: v8 (GANDALF, dropout 0.2, 0.2875 — в пределах шума), v9 (FT-Transformer меньше, 0.2433 — хуже). Выбраны по val: GANDALF v4, FT-Transformer v5. В ноутбуке 1.4: таблица экспериментов, график lr по trials Optuna, выбранные конфигурации, вывод. Логи: `reports/iterations/v4.md`–`v9.md`.
 - Доска: DL-4
 
-### [ ] Этап 4. Сравнение, ошибки, importance — п. 1.5, 3 балла вместе с этапом 5
+### [x] Этап 4. Сравнение, ошибки, importance — п. 1.5, 3 балла вместе с этапом 5
 - Требование: сравнить baseline и две нейросети: метрики, распределение ошибок, крупные ошибки, причины различий, поведение на разных объектах; feature importance: общий permutation importance и встроенные механизмы моделей (`assignment.md`, 1.5).
 - В ноутбуке: 1.5 — Test: таблица test-метрик трёх моделей + справочные строки ml-2 ЛР1; Анализ ошибок: confusion matrix, ошибки больше чем на 1 класс; Интерпретация: permutation importance трёх моделей на одном графике + встроенная importance FT-Transformer и GANDALF.
 - Как: `/code-lab stage 4` → `/train` финальных конфигураций → `/write-conclusion`.
 - Готово, когда: таблица, confusion matrix и importance для трёх моделей в ноутбуке, у каждого блока вывод с числами из `runs/`.
-- Результаты: —
+- Результаты: финальные раны v10 (CatBoost = v1), v11 (GANDALF = v4), v12 (FT-Transformer = v5); test F1 macro 0.3293 / 0.3041 / 0.3032; ноутбук 1.5 — таблица, confusion matrix, размер ошибок, согласие моделей, permutation и встроенный importance, 3 вывода; `reports/iterations/v10–v12.md`.
 - Доска: DL-5
 
 ### [ ] Этап 5. Ручные объекты, часть I — обязательная проверка (входит в 3 балла п. 1.5)
@@ -135,7 +138,6 @@
 - Готово, когда: `/lab-review` без критичных проблем; Run all без ошибок; `submission/*.ipynb` ≤ 10 МБ.
 - Результаты: —
 - Доска: DL-10
-- 2026-10-31, этап 3: гипотеза 3 (ёмкость и dropout) — v8 GANDALF dropout 0.2: val loss лучше, F1 macro 0.2875 ≈ v4; v9 FT-Transformer embed 16 / 3 блока / ff_dropout 0.3: 0.2433, переобучение с эпохи 7 при lr от большой модели. Критерий «≥ 3 гипотезы на модель» выполнен; лучшие по val: v4, v5. Следующий шаг — `/write-conclusion` 1.4, затем закрытие этапа.
 
 ## Неясности
 
