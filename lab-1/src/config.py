@@ -54,6 +54,7 @@ class Config:
 
     # TabLDM (значения по умолчанию xiaomi-tabldm)
     tabldm_n_estimators: int = 16
+    # усложнение: выключается в smoke — полный режим строит 64 кандидата с 5-fold OOF (fit 96 с на v13)
     tabldm_enhance: bool = True  # enhance_candidates
 
     # TabM (значения по умолчанию TabM.make с эмбеддингами)
