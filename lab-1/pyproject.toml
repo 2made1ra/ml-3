@@ -13,6 +13,8 @@ dependencies = [
     "kaleido",  # PNG-фолбэк для графиков (использует установленный Chrome)
     "tqdm",
     "mlflow",
+    "catboost>=1.2.10",
+    "kagglehub>=1.0.3",
 ]
 
 [dependency-groups]
