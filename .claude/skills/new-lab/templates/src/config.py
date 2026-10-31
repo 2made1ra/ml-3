@@ -12,6 +12,9 @@ class Config:
     run_name: str = "v1"
     tracker: str = "mlflow"  # mlflow | none (можно переопределить env TRACKER)
     seed: int = 42
+    stage: int = 0  # этап из task.md
+    hypothesis: str = ""  # H<n> из «Гипотез» этапа
+    baseline_run: str = ""  # ран, с которым сравниваем
 
     # данные
     batch_size: int = 64

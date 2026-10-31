@@ -1,6 +1,6 @@
 ---
 name: lab-flow
-description: Drive a whole lab end to end by calling the other skills in order — /new-lab, then for each stage of task/task.md its «Как» chain (/code-lab, /tune, /train, /log-iteration, /write-conclusion), closing the stage with [x], /kva-sync and a board report, then /lab-review, /pack-submission, /prep-defense — one stage per fresh session (resumed by /continue-lab), hypotheses chosen with the user, other questions only at critical points, committing only at the end. Use when the user wants Claude to lead the lab («веди лабу», «делай всё сам», «автопилот») or invokes /lab-flow.
+description: Drive a whole lab end to end by calling the other skills in order — /new-lab, then for each stage of task/task.md its «Как» chain (/code-lab, /tune, /train, /log-iteration, /write-conclusion), closing the stage with [x], /kva-sync and a board report, then /lab-review, /pack-submission, /prep-defense — one stage per fresh session (resumed by /continue-lab), hypotheses chosen with the user, other questions only at critical points, a commit per experiment. Use when the user wants Claude to lead the lab («веди лабу», «делай всё сам», «автопилот») or invokes /lab-flow.
 argument-hint: "<lab number> [assignment file]"
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/lab_state.sh *)
 ---
@@ -32,7 +32,12 @@ Inside a step:
 - Routine confirmations of other skills are skipped: plan approvals (`/tune` round plan), offers to commit.
 - `/train` and `/tune` on the Mac: Claude starts the run itself in the background when the estimate is ≤ 20 min. Longer runs, and any PC run, still ask who starts it.
 
-Commits: none during the flow. One commit and push at the end of the lab (section 3, «Finish»), or whenever the user asks. Runs trained on uncommitted code get `git_dirty: true` in `summary.json`; that is expected.
+Commits: Claude commits itself, so every full run trains on a clean tree (`git_dirty: false`) and git history is the experiment log. Types and checks: "Git" in `CLAUDE.md`.
+
+- Before a full run (`/train`, `/tune`), if code changed: `feat(labN): H<n> — <изменение>` (or `bug(labN)` for a fix).
+- After its `/log-iteration`: `run(labN): vN — H<n>, <модель>, val <метрика> <число> (Δ <±> к vM)` with `runs/vN/` (or `runs/tune/<study>.db`) and `reports/`. Body: the hypothesis, the changed parameters, train time, the verdict.
+- Other work (notebook sections, conclusions, `task.md`): `docs(labN): …` when the stage closes.
+- Push when the stage closes (board links need it). Merge into `main` only on the user's go.
 
 ### Hypotheses
 
@@ -52,14 +57,14 @@ Claude proposes, the user picks. At the start of an experiment stage and after e
 1. **Start:** no `task.md` → `/new-lab N <file>` (no assignment file → ask for it, `docs/workflow.md`, section 0). Branch `lab-N`, transcript, interview, `task.md`, board, scaffold; then the «Дальше» line.
 2. **The current stage** (the first `### [ ]`). First, if its board task is not `in_progress`: `update_task` to `in_progress` (`/kva-sync`, section 2). Then its «Как» chain, step by step, e.g. `/code-lab stage K` → `/tune` → `/train` → `/log-iteration` → `/write-conclusion`. Where to start inside it: the state block (runs and iteration files listed in «Результаты», open «Гипотезы», `TODO (этап K` left in the notebook, uncommitted files). Ambiguous → say what you see and ask.
    - Experiment stages loop in batches: pick hypotheses (section 2) → for each ticked one: `/code-lab` if code changes → `/tune` or `/train` → `/log-iteration` → tick it. After the batch, compare with «Готово, когда» (e.g. «≥ 3 гипотезы на модель»): the next batch, or `/write-conclusion` once the criterion holds.
-3. **Close the stage:** check every item of «Готово, когда» with evidence (file, run, cell). All hold → tick `[x]`, fill «Результаты», `/kva-sync`, the stage report comment (`/kva-sync`, section 6), write the handoff, then the «Дальше» line. Some item fails → say which and run the step that fixes it.
+3. **Close the stage:** check every item of «Готово, когда» with evidence (file, run, cell). All hold → tick `[x]`, fill «Результаты», `/kva-sync`, the stage report comment (`/kva-sync`, section 6), write the handoff, commit and push (section 2), then the «Дальше» line. Some item fails → say which and run the step that fixes it.
 4. **Finish** (stage «Итоговые выводы и сдача»; `/lab-review` and what follows run in their own fresh session):
    - `/write-conclusion` for «Итоговые выводы».
    - `/lab-review`.
    - Fixes from the review via `/code-lab`, one finding at a time.
    - Run all: Claude runs `uv run jupyter nbconvert --to notebook --execute --inplace lab-N.ipynb` from `lab-N/`.
    - `/pack-submission` + the size limit from «Оформление и сдача».
-   - Ask: commit and push the lab branch (commit types: "Git" in `CLAUDE.md`).
+   - Commit and push the lab branch (section 2).
    - Ask: merge into `main` ("Git" in `CLAUDE.md`): `git switch main && git pull && git merge --no-ff lab-N && git push`. The branch stays.
    - `/prep-defense`.
 

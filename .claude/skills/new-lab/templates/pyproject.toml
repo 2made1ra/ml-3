@@ -13,6 +13,8 @@ dependencies = [
     "kaleido",  # PNG-фолбэк для графиков (использует установленный Chrome)
     "tqdm",
     "mlflow",
+    "psutil",  # системные метрики MLflow
+    "nvidia-ml-py; sys_platform == 'linux'",  # метрики GPU на PC
 ]
 
 [dependency-groups]

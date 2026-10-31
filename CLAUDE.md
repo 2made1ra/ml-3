@@ -106,7 +106,7 @@ SMOKE=1 uv run python -m src.train --run smoke
 
 - `seed_everything(cfg.seed)` at the start of every run. All hyperparameters live in `Config` and go to MLflow and `summary.json`.
 - Splits are seeded. Test data never drives model or hyperparameter selection.
-- Dataset versions are pinned (`.claude/rules/training-code.md`). `summary.json` records `git_commit` and `git_dirty`.
+- Dataset versions are pinned (`.claude/rules/training-code.md`). `summary.json` records `git_commit`, `git_dirty`, the environment (`env`), the data fingerprint (`data`) and peak memory (`resources`). Runs are immutable: a run name is never reused. MLflow gets the same plus datasets, artifacts, system metrics and Optuna trials as nested runs.
 
 ## Secrets
 
@@ -128,5 +128,5 @@ SMOKE=1 uv run python -m src.train --run smoke
   - The branch is kept after the merge: board links point to it.
 - Commit types: `feat(labN)`, `bug(labN)`, `docs(labN)`, `run(labN): vN — ...` (training results), `chore`. Message in Russian.
 - Pre-commit hooks (prek, `.pre-commit-config.yaml`): gitleaks, files > 5 MB, `ruff check`. Never bypass them with `--no-verify`; fix the cause.
-- Commit only when the user asks. Before committing, check that `data/`, `artifacts/`, `mlflow.db`, `mlruns/`, `mlartifacts/` are not staged.
+- Commit only when the user asks. Exception: under `/lab-flow` Claude commits each experiment itself (`.claude/skills/lab-flow/SKILL.md`, section 2). Before committing, check that `data/`, `artifacts/`, `mlflow.db`, `mlruns/`, `mlartifacts/` are not staged.
 - Commit notebook outputs (plots must be visible).

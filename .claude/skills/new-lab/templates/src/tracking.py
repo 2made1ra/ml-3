@@ -9,6 +9,8 @@ import os
 from dataclasses import asdict
 from pathlib import Path
 
+import pandas as pd
+
 MLFLOW_HOME = Path.home() / ".mlflow"
 
 
@@ -34,7 +36,7 @@ def setup_mlflow(experiment: str) -> str:
 class Tracker:
     """Логирование метрик в выбранный трекер (mlflow или none)."""
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, nested: bool = False):
         self.backend = _backend(cfg)
         self.run_ref = None  # id рана MLflow — уходит в runs/<run>/summary.json
         params = asdict(cfg)
@@ -42,7 +44,12 @@ class Tracker:
             import mlflow
 
             exp_id = setup_mlflow(cfg.project)
-            run = mlflow.start_run(experiment_id=exp_id, run_name=cfg.run_name)
+            run = mlflow.start_run(
+                experiment_id=exp_id,
+                run_name=cfg.run_name,
+                nested=nested,
+                log_system_metrics=True,
+            )
             mlflow.log_params(params)
             self.run_ref = run.info.run_id
         elif self.backend != "none":
@@ -62,6 +69,29 @@ class Tracker:
 
             mlflow.log_metrics({f"final/{k}": v for k, v in metrics.items()})
 
+    def log_artifacts(self, run_dir: Path) -> None:
+        """Файлы слепка рана (history, predictions, summary) как артефакты."""
+        if self.backend == "mlflow":
+            import mlflow
+
+            mlflow.log_artifacts(str(run_dir))
+
+    def log_figure(self, fig, name: str) -> None:
+        """Plotly-график как HTML-артефакт."""
+        if self.backend == "mlflow":
+            import mlflow
+
+            mlflow.log_figure(fig, name)
+
+    def log_inputs(self, splits: dict[str, pd.DataFrame], source: str) -> None:
+        """Датасеты (вкладка Datasets в MLflow, с digest) по именам разбиений."""
+        if self.backend == "mlflow":
+            import mlflow
+            from mlflow.data.pandas_dataset import from_pandas
+
+            for name, df in splits.items():
+                mlflow.log_input(from_pandas(df, source=source, name=name), context=name)
+
     def finish(self) -> None:
         """Закрывает ран."""
         if self.backend == "mlflow":
@@ -70,9 +100,9 @@ class Tracker:
             mlflow.end_run()
 
 
-def init_tracker(cfg) -> Tracker:
-    """Создаёт трекер по cfg.tracker или env TRACKER."""
-    return Tracker(cfg)
+def init_tracker(cfg, nested: bool = False) -> Tracker:
+    """Создаёт трекер по cfg.tracker или env TRACKER; nested — дочерний ран активного."""
+    return Tracker(cfg, nested)
 
 
 def make_lightning_logger(cfg):
