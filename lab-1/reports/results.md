@@ -18,3 +18,5 @@
 | v16 | H2: k 1 (lr 9e-3, wd 3e-5 как в v15) | TabM | 0.2881 | 0.2895 | runs/v16 |
 | v17 | H2: k 8 (lr 9e-3, wd 3e-5 как в v15) | TabM | 0.2934 | 0.2624 | runs/v17 |
 | v18 | H2: k 64 (lr 9e-3, wd 3e-5 как в v15) | TabM | 0.2830 | 0.2924 | runs/v18 |
+| v19 | H2: k 1, lr 1e-2, wd 1e-5 из Optuna (`tune-tabm-k1`) | TabM | 0.3260 | 0.2428 | runs/v19 |
+| v20 | H2: k 64, lr 7e-3, wd 4e-4 из Optuna (`tune-tabm-k64`) | TabM | 0.3811 | 0.3248 | runs/v20 |
