@@ -4,7 +4,8 @@
       "Read(~/.kaggle/**)",
       "Read(~/.cache/huggingface/token)",
       "Read(~/.cache/huggingface/stored_tokens)",
-      "Read(~/.netrc)"
+      "Read(~/.netrc)",
+      "Read(**/secrets.yaml)"
     ]
   }
 }

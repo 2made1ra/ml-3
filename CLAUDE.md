@@ -9,7 +9,7 @@ Lab assignments for a Deep Learning course (MSc, semester 3).
 | Chat with the user | Russian |
 | Agent-to-agent: Agent prompts, specs, `SendMessage`, subagent reports | English, always |
 | Instruction files: `CLAUDE.md`, `.claude/**` | English |
-| Deliverables: notebook markdown and conclusions, `task/assignment.md`, `task/task.md`, `reports/`, `README.md`, `docs/`, commit messages, comments/docstrings/printed messages in lab code | Russian |
+| Deliverables: notebook markdown and conclusions, `task/assignment.md`, `task/task.md`, kvatask board tasks, `reports/`, `README.md`, `docs/`, commit messages, comments/docstrings/printed messages in lab code | Russian |
 
 Keep ML terms in English (`backbone`, `fine-tuning`, `macro F1`) in any language.
 
@@ -32,7 +32,7 @@ Applies to chat, agent messages, instruction files and code.
 
 ## Workflow
 
-1. `/new-lab N`: assignment analysis via `/plan-lab` (transcript, interview, stage plan `task/task.md`), scaffold, environment. `task.md` drives all later steps.
+1. `/new-lab N`: assignment analysis via `/plan-lab` (transcript, interview, stage plan `task/task.md`), scaffold, environment. `task.md` drives all later steps. `/kva-sync` mirrors it onto the kvatask board: an epic per lab, a task per stage.
 2. `/code-lab <goal>`: the main model decides and writes a spec, `lab-coder` writes code, the main model verifies.
 3. `/tune` (when needed): Optuna study of nuisance hyperparameters, planned by the Google Tuning Playbook.
 4. `/train`: time estimate, machine choice, commands. The user starts training.
@@ -53,7 +53,8 @@ Applies to chat, agent messages, instruction files and code.
 
 ```
 ml-3/
-├── CLAUDE.md, README.md, docs/backlog.md, .pre-commit-config.yaml
+├── CLAUDE.md, README.md, docs/backlog.md, .pre-commit-config.yaml, .mcp.json
+├── secrets.yaml            # per-machine keys, gitignored
 ├── .claude/{agents,rules,skills,settings.json}
 └── lab-N/                  # one lab = one uv project
     ├── pyproject.toml      # uv.lock is committed
@@ -100,13 +101,14 @@ SMOKE=1 uv run python -m src.train --run smoke
 
 ## Secrets
 
-- Secrets live in each tool's own store on each machine. Never in the repo: no `.env`, no `.env.example`, no config files with tokens.
+- Secrets live in each tool's own store on each machine. Never committed: no `.env`, no `.env.example`, no config files with tokens. The one exception is `secrets.yaml` at the repo root: gitignored, one per machine, each machine with its own key. It holds keys of tools without their own store.
   - Kaggle: `~/.kaggle/` (`kaggle.json` or `access_token`, mode `600`).
   - Hugging Face: `uvx --from huggingface_hub hf auth login` → `~/.cache/huggingface/token`.
+  - kvatask (task board, MCP server in `.mcp.json`): `kvatask_api_key` in `secrets.yaml`; `headersHelper` reads it at connection time.
 - Code never passes tokens explicitly (`token=...`, `os.environ[...]`); libraries find them.
 - Claude never asks for a secret in chat, never reads or prints token files, never enters keys. It gives the login command; the user runs it.
 - On 401/403 from `kagglehub`/`datasets`, check the login on that machine first.
-- Enforced, not just instructed: `Read` deny rules for token files in `.claude/settings.json`; gitleaks in the pre-commit hooks.
+- Enforced, not just instructed: `Read` deny rules for token files and `secrets.yaml` in `.claude/settings.json`; gitleaks in the pre-commit hooks. Never print `secrets.yaml` via Bash either.
 
 ## Git
 

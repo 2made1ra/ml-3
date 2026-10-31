@@ -14,6 +14,7 @@ prek install               # в корне репозитория, после к
 
 - **Kaggle:** kaggle.com → Settings → API → создать токен, положить в `~/.kaggle/` и выполнить `chmod 600 ~/.kaggle/*`.
 - **Hugging Face:** `uvx --from huggingface_hub hf auth login` (токен — huggingface.co → Settings → Access Tokens, хватает read).
+- **kvatask** (доска задач): на каждой машине свой ключ. Положите его в `secrets.yaml` в корне репозитория строкой `kvatask_api_key: <ключ>`; файл не коммитится. На Mac — скопировать ключ и в корне репозитория выполнить `printf 'kvatask_api_key: %s\n' "$(pbpaste)" > secrets.yaml && chmod 600 secrets.yaml`. Подключение описано в `.mcp.json`.
 
 Трекинг — MLflow, локально на каждой машине, ничего настраивать не нужно. База одна на все лабы: `~/.mlflow/mlflow.db`. Посмотреть раны (из папки любой лабы):
 

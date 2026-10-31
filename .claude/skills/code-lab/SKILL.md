@@ -17,6 +17,8 @@ You decide and verify; `lab-coder` writes code. You write no `src/` code yoursel
 | `review [scope]` | Review the user's code only |
 | anything else | One task: new code, a bug fix or a rewrite |
 
+Board: when work on a stage starts, set its kvatask task to «в работе»; after ticking a stage, run `/kva-sync` (`.claude/skills/kva-sync/SKILL.md`).
+
 ## Mode: all
 
 1. The plan is the stage list in `task/task.md` (made by `/plan-lab`). Take the first unchecked stage.

@@ -28,6 +28,7 @@ lab-*/runs/tune/*-smoke.db
 .env
 .env.*
 kaggle.json
+secrets.yaml
 *.pem
 *.key
 

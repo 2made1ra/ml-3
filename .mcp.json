@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "kvatask": {
+      "type": "http",
+      "url": "https://2madeira-space.kvatask.ru/mcp",
+      "headersHelper": "printf '{\"Authorization\": \"Bearer %s\"}' \"$(sed -n 's/^kvatask_api_key://p' secrets.yaml | tr -dc 'A-Za-z0-9_-')\""
+    }
+  }
+}

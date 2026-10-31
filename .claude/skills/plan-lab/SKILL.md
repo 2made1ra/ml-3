@@ -14,7 +14,7 @@ Output, both in Russian: `task/assignment.md` (the assignment as text) and `task
 - Never guess unreadable text. A full-page screenshot is often downscaled in transfer (e.g. 197×2000 px: only headings readable). Then tell the user what is readable and ask for a PDF (browser: Print → Save as PDF), the copied text, or one screenshot per screen.
 - Copy the originals into `lab-N/task/`. macOS blocks reading `~/Downloads`, `~/Desktop`, `~/Documents` (EPERM): ask the user to move the file into `lab-N/task/`; never work around the block.
 - Transcribe the assignment into `task/assignment.md`: full text with the original numbering, headings, points, links and code snippets; no paraphrasing. Mark unreadable spots `[неразборчиво]`.
-- Re-plan (`task.md` exists): keep checked stages, «Решения» and «Результаты»; report what changed in the assignment.
+- Re-plan (`task.md` exists): keep checked stages, «Решения», «Результаты» and «Доска» links; report what changed in the assignment.
 
 ## 2. Analyze
 
@@ -44,7 +44,7 @@ Answers go to «Решения». Unresolved items stay in «Неясности�
 ```markdown
 # Лабораторная N: <тема>
 
-Условие: `task/assignment.md` (оригиналы: `task/<файлы>`) · Разобрано: YYYY-MM-DD · Дедлайн: <если есть>
+Условие: `task/assignment.md` (оригиналы: `task/<файлы>`) · Разобрано: YYYY-MM-DD · Дедлайн: <если есть> · Доска: <эпик, пишет /kva-sync>
 
 ## Цель
 <1–3 предложения>
@@ -72,6 +72,7 @@ Answers go to «Решения». Unresolved items stay in «Неясности�
 - Как: <скиллы: `/code-lab`, `/tune`, `/train`, `/write-conclusion`>
 - Готово, когда: <проверяемый критерий>
 - Результаты: <runs/vN, reports/iterations/vN.md — заполняется по ходу>
+- Доска: <задача, пишет /kva-sync>
 
 ## Неясности
 - <открытые вопросы>
@@ -85,4 +86,4 @@ Answers go to «Решения». Unresolved items stay in «Неясности�
 
 ## 5. Finish
 
-Show the user: the stages (one line each, with points), the decisions and the open questions. Next: `/new-lab` continues with the scaffold; after a re-plan, `/code-lab` on the next unchecked stage.
+Run `/kva-sync` (`.claude/skills/kva-sync/SKILL.md`): the epic and the stage tasks on the board. Then show the user: the stages (one line each, with points), the decisions and the open questions. Next: `/new-lab` continues with the scaffold; after a re-plan, `/code-lab` on the next unchecked stage.
