@@ -29,6 +29,12 @@
 - Машина → вся лаба на Mac M4, PC не используется (пользователь). `/train` и `/tune` дают команды только для Mac.
 - FAST_MODE и Run all → наш флоу (пользователь). Обучение в `src/train.py` → `runs/vN/`, ноутбук только читает `runs/`. Run all заново строит отчёт с теми же числами. Переобучение: `uv run python -m src.train` с тем же seed и `git_commit` из `summary.json`. FAST_MODE = `SMOKE=1`.
 - Ручные объекты и permutation importance → считаются в конце обучения каждой финальной модели тем же pipeline и сохраняются в `runs/vN/`.
+- 2026-10-31, этап 2: `pytorch_tabular` 1.2.0 + `pytorch-lightning` 2.6.6. `pandas` откатился 3.1 → 2.3.3 (требование `pytorch_tabular` 1.2.0); 1.1.0 с Lightning 2.1.4 падает на импорте.
+- 2026-10-31, этап 2: `TabularModel.fit` по умолчанию берёт `seed=42` и игнорирует `TrainerConfig.seed`. `cfg.seed` передаётся в `fit` явно (`src/train.py`), важно для 5 seeds на этапе 7.
+- 2026-10-31, этап 2: loss@init у FT-Transformer отличается от ln 6 из-за инициализации головы в библиотеке. «Из коробки» её не меняем.
+- 2026-10-31, этап 3: lr и weight decay подобраны Optuna (`src/tune.py`, 20 trials на модель, `runs/tune/`): GANDALF lr 5e-3 / wd 1e-5 (v4), FT-Transformer lr 4e-3 / wd 5e-6 (v5). `Config.lr` общий для двух моделей, поэтому значения передаются в CLI: `uv run python -m src.train --run vN --model <m> --lr .. --weight-decay ..`. Weight decay дальше не тюним (importance у GANDALF 0.02). У FT-Transformer lr ≥ 6.9e-3 расходится.
+- 2026-10-31, этап 3, план гипотез (≥ 3 на модель): 1) lr — v4, v5 готовы; 2) веса классов в CrossEntropy; 3) размер модели и dropout. В ноутбуке 1.4 v4/v5 ещё не показаны — добавить на `/write-conclusion` этапа.
+- 2026-10-31, этап 3: гипотеза 2 (веса классов balanced) не подтвердилась: v6 GANDALF 0.2307, v7 FT-Transformer 0.2010 (расходится при lr 4e-3). Гипотеза 3 — на лучших конфигурациях без весов (v4, v5) через `--set` (`src/train.py`), например `--set ft_embed_dim=16 --set ft_ff_dropout=0.3`.
 
 ## Оформление и сдача
 
@@ -60,20 +66,20 @@
 - Результаты: `runs/v1` (CatBoost): val F1 macro 0.2925, test 0.3293; Dummy — 0.0995. Test построчно совпадает с ml-2 ЛР1. Лог: `reports/iterations/v1.md`.
 - Доска: DL-2
 
-### [ ] Этап 2. FT-Transformer и GANDALF «из коробки» — п. 1.3, 2 балла
+### [x] Этап 2. FT-Transformer и GANDALF «из коробки» — п. 1.3, 2 балла
 - Требование: две архитектуры в разумной базовой конфигурации (`assignment.md`, 1.3).
 - В ноутбуке: 1.3 — идея каждой архитектуры (2–3 предложения); таблица: основные параметры, число эпох, val F1 macro, время обучения, число параметров; кривые обучения.
 - Как: `/code-lab stage 2` → `/train` → `/log-iteration` → `/write-conclusion`.
 - Готово, когда: по рану на модель в `runs/`; smoke пройден; loss на старте ≈ ln 6 ≈ 1.79; одна batch переобучается.
-- Результаты: —
+- Результаты: `runs/v2` (FT-Transformer): val F1 macro 0.2742, 272 614 параметров, лучшая эпоха 12 из 32. `runs/v3` (GANDALF): val 0.2782, 9 746 параметров, лучшая эпоха 32 из 52. Обе ниже CatBoost (0.2925) и предсказывают в основном 5 и 6. Sanity: overfit 1 batch — 0.0019 / 0.0258; loss@init у GANDALF 1.72–1.97, у FT-Transformer 1.35–2.70 (std логитов при init 0.89, инициализация библиотеки, не баг). Логи: `reports/iterations/v2.md`, `v3.md`.
 - Доска: DL-3
 
-### [ ] Этап 3. Исследование гиперпараметров — п. 1.4, 3 балла
+### [x] Этап 3. Исследование гиперпараметров — п. 1.4, 3 балла
 - Требование: несколько осмысленных экспериментов на модель: какой параметр меняем → зачем → что получили (`assignment.md`, 1.4).
 - В ноутбуке: 1.4 — по модели таблица экспериментов «гипотеза → значения → val F1 macro → вывод», график влияния параметра, выбранная конфигурация.
 - Как: `/tune` для lr каждой модели → итерации с одной гипотезой (`/code-lab` при изменении кода, `/train`, `/log-iteration`) → `/write-conclusion`. Опционально (плюс в карму): self-supervised pretraining, если `pytorch_tabular` поддерживает его для выбранных моделей.
 - Готово, когда: ≥ 3 гипотезы на модель, у каждой — ран в `runs/` и вывод; лучшие конфигурации выбраны по val.
-- Результаты: —
+- Результаты: lr: v4 (GANDALF, val F1 macro 0.2907), v5 (FT-Transformer, 0.2933); studies `runs/tune/tune-gandalf-lr.db`, `runs/tune/tune-ft-lr.db`. Веса классов: v6 (GANDALF, 0.2307), v7 (FT-Transformer, 0.2010) — хуже. Ёмкость/dropout: v8 (GANDALF, dropout 0.2, 0.2875 — в пределах шума), v9 (FT-Transformer меньше, 0.2433 — хуже). Выбраны по val: GANDALF v4, FT-Transformer v5. В ноутбуке 1.4: таблица экспериментов, график lr по trials Optuna, выбранные конфигурации, вывод. Логи: `reports/iterations/v4.md`–`v9.md`.
 - Доска: DL-4
 
 ### [ ] Этап 4. Сравнение, ошибки, importance — п. 1.5, 3 балла вместе с этапом 5
@@ -129,6 +135,7 @@
 - Готово, когда: `/lab-review` без критичных проблем; Run all без ошибок; `submission/*.ipynb` ≤ 10 МБ.
 - Результаты: —
 - Доска: DL-10
+- 2026-10-31, этап 3: гипотеза 3 (ёмкость и dropout) — v8 GANDALF dropout 0.2: val loss лучше, F1 macro 0.2875 ≈ v4; v9 FT-Transformer embed 16 / 3 блока / ff_dropout 0.3: 0.2433, переобучение с эпохи 7 при lr от большой модели. Критерий «≥ 3 гипотезы на модель» выполнен; лучшие по val: v4, v5. Следующий шаг — `/write-conclusion` 1.4, затем закрытие этапа.
 
 ## Неясности
 
