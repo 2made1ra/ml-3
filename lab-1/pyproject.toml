@@ -15,6 +15,8 @@ dependencies = [
     "mlflow",
     "catboost>=1.2.10",
     "kagglehub>=1.0.3",
+    "pytorch-tabular>=1.2.0",
+    "optuna>=5.0.0",
 ]
 
 [dependency-groups]
