@@ -15,7 +15,7 @@ class Config:
     stage: int = 0  # этап из task.md
     hypothesis: str = ""  # H<n> из «Гипотез» этапа
     baseline_run: str = ""  # ран, с которым сравниваем
-    model: str = "catboost"  # catboost | ft_transformer | gandalf
+    model: str = "catboost"  # catboost | ft_transformer | gandalf | tabldm | tabm
 
     # данные
     batch_size: int = 64
@@ -52,6 +52,18 @@ class Config:
     gandalf_dropout: float = 0.0
     gandalf_init_sparsity: float = 0.3
 
+    # TabLDM (значения по умолчанию xiaomi-tabldm)
+    tabldm_n_estimators: int = 16
+    tabldm_enhance: bool = True  # enhance_candidates
+
+    # TabM (значения по умолчанию TabM.make с эмбеддингами)
+    tabm_k: int = 32
+    tabm_n_blocks: int = 2
+    tabm_d_block: int = 512
+    tabm_dropout: float = 0.1
+    tabm_n_bins: int = 48
+    tabm_d_embedding: int = 16
+
     def smoke_if_needed(self) -> "Config":
         """При SMOKE=1 возвращает урезанный конфиг для быстрой проверки, иначе себя."""
         if not is_smoke():
@@ -65,4 +77,6 @@ class Config:
             num_workers=0,
             cb_iterations=20,
             perm_repeats=1,
+            tabldm_n_estimators=1,
+            tabldm_enhance=False,
         )

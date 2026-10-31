@@ -120,9 +120,11 @@ def load_run(name: str) -> Run:
         raise FileNotFoundError(f"{run_dir} не найден — сделан ли git pull после обучения?")
     summary = json.loads((run_dir / "summary.json").read_text())
     pred_path = run_dir / "predictions.csv"
+    history_path = run_dir / "history.csv"
     return Run(
         name=name,
-        history=pd.read_csv(run_dir / "history.csv"),
+        # у TabLDM нет эпох: history.csv пустой
+        history=pd.read_csv(history_path) if history_path.stat().st_size > 1 else pd.DataFrame(),
         metrics=summary["metrics"],
         config=summary["config"],
         device=summary.get("device"),

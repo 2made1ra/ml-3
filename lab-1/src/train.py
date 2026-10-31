@@ -1,6 +1,7 @@
-"""Обучение CatBoost / FT-Transformer / GANDALF: uv run python -m src.train --run vN --model M [--set KEY=VALUE ...]."""
+"""Обучение CatBoost / FT-Transformer / GANDALF / TabLDM / TabM: uv run python -m src.train --run vN --model M [--set KEY=VALUE ...]."""
 
 import argparse
+import copy
 import time
 from dataclasses import replace
 
@@ -9,11 +10,16 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from catboost import CatBoostClassifier
+from huggingface_hub import hf_hub_download
 from pytorch_tabular import TabularModel
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models import FTTransformerConfig, GANDALFConfig
+from rtdl_num_embeddings import PiecewiseLinearEmbeddings, compute_bins
 from sklearn.metrics import balanced_accuracy_score, f1_score, roc_auc_score
+from sklearn.preprocessing import QuantileTransformer
 from sklearn.utils.class_weight import compute_class_weight
+from tabldm import TabLDMClassifier
+from tabm import TabM
 
 from src.config import Config
 from src.data import (
@@ -31,6 +37,11 @@ from src.tracking import init_tracker
 from src.utils import get_device, seed_everything
 
 ACCELERATORS = {"cuda": "gpu", "mps": "mps", "cpu": "cpu"}
+
+# усложнение: ревизия чекпоинта закреплена — воспроизводимость, встроенная загрузка tabldm ревизию не фиксирует (task.md, «Решения»)
+TABLDM_REPO = "occams/Xiaomi-TabLDM"
+TABLDM_CKPT = "checkpoints/clf_default.ckpt"
+TABLDM_REVISION = "712e5635be9fd8728084cd5ae105ddecb31dc03c"
 
 
 def compute_metrics(y_true, y_pred, proba) -> dict:
@@ -84,6 +95,69 @@ def save_analysis(
     manual.to_csv(run_dir / "manual.csv", index=False)
 
 
+def finish_run(
+    cfg: Config,
+    tracker,
+    proba_fn,
+    history: list[dict],
+    metrics: dict,
+    device: str,
+    builtin: np.ndarray,
+) -> dict:
+    """Метрики val и test, анализ, сохранение рана и трекер; proba_fn принимает DataFrame признаков."""
+    train_df, val_df, test_df = load_splits(cfg.seed)
+    X_val, y_val = to_xy(val_df)
+    X_test, y_test = to_xy(test_df)
+
+    proba_val = proba_fn(X_val)
+    metrics.update(
+        {
+            f"val_{k}": v
+            for k, v in compute_metrics(y_val, proba_val.argmax(axis=1), proba_val).items()
+        }
+    )
+    start = time.time()
+    proba = proba_fn(X_test)
+    inference_time = time.time() - start
+    pred = proba.argmax(axis=1)
+    metrics.update({f"test_{k}": v for k, v in compute_metrics(y_test, pred, proba).items()})
+    metrics.update(
+        inference_time_sec=inference_time,
+        n_train=len(train_df),
+        n_val=len(val_df),
+        n_test=len(test_df),
+    )
+    tracker.summary(metrics)
+
+    predictions = pd.DataFrame({"y_true": y_test + CLASSES[0], "y_pred": pred + CLASSES[0]})
+    for i, c in enumerate(CLASSES):
+        predictions[f"prob_{c}"] = proba[:, i]
+
+    tracker.log_inputs({"train": train_df, "val": val_df, "test": test_df}, source=DATASET)
+    run_dir = save_run(
+        cfg,
+        history,
+        metrics,
+        predictions,
+        device=device,
+        tracker_run=tracker.run_ref,
+        data=fingerprint(train_df, val_df, test_df),
+    )
+    save_analysis(run_dir, cfg, proba_fn, X_test, y_test, builtin)
+    tracker.log_artifacts(run_dir)
+    tracker.log_figure(
+        plot_confusion(
+            predictions, labels=[str(c) for c in CLASSES], title=f"{cfg.run_name}: test"
+        ),
+        "confusion_test.html",
+    )
+    tracker.finish()
+    print(
+        f"val F1 macro: {metrics['val_f1_macro']:.4f}, test F1 macro: {metrics['test_f1_macro']:.4f}"
+    )
+    return metrics
+
+
 def make_model(cfg: Config) -> CatBoostClassifier:
     """CatBoost с параметрами из cfg."""
     return CatBoostClassifier(
@@ -103,10 +177,9 @@ def train_catboost(cfg: Config) -> dict:
     """Обучает CatBoost, оценивает лучшую модель на val и test, сохраняет ран."""
     seed_everything(cfg.seed)
     tracker = init_tracker(cfg)
-    train_df, val_df, test_df = load_splits(cfg.seed)
+    train_df, val_df, _ = load_splits(cfg.seed)
     X_train, y_train = to_xy(train_df)
     X_val, y_val = to_xy(val_df)
-    X_test, y_test = to_xy(test_df)
 
     model = make_model(cfg)
     start = time.time()
@@ -126,55 +199,11 @@ def train_catboost(cfg: Config) -> dict:
         history.append({"epoch": i, "train_loss": tl, "val_loss": vl})
         tracker.log({"train_loss": tl, "val_loss": vl}, step=i)
 
-    metrics = {}
-    for name, X, y in [("val", X_val, y_val), ("test", X_test, y_test)]:
-        proba = model.predict_proba(X)
-        pred = proba.argmax(axis=1)
-        metrics.update({f"{name}_{k}": v for k, v in compute_metrics(y, pred, proba).items()})
-    start = time.time()
-    model.predict_proba(X_test)
-    inference_time = time.time() - start
-    metrics.update(
-        best_iteration=model.get_best_iteration(),
-        inference_time_sec=inference_time,
-        train_time_sec=train_time,
-        n_train=len(train_df),
-        n_val=len(val_df),
-        n_test=len(test_df),
-    )
-    tracker.summary(metrics)
+    metrics = {"best_iteration": model.get_best_iteration(), "train_time_sec": train_time}
     model.save_model(f"artifacts/{cfg.run_name}_best.cbm")
-
-    proba = model.predict_proba(X_test)
-    predictions = pd.DataFrame(
-        {"y_true": y_test + CLASSES[0], "y_pred": proba.argmax(axis=1) + CLASSES[0]}
+    return finish_run(
+        cfg, tracker, model.predict_proba, history, metrics, "cpu", model.get_feature_importance()
     )
-    for i, c in enumerate(CLASSES):
-        predictions[f"prob_{c}"] = proba[:, i]
-
-    tracker.log_inputs({"train": train_df, "val": val_df, "test": test_df}, source=DATASET)
-    run_dir = save_run(
-        cfg,
-        history,
-        metrics,
-        predictions,
-        device="cpu",
-        tracker_run=tracker.run_ref,
-        data=fingerprint(train_df, val_df, test_df),
-    )
-    save_analysis(run_dir, cfg, model.predict_proba, X_test, y_test, model.get_feature_importance())
-    tracker.log_artifacts(run_dir)
-    tracker.log_figure(
-        plot_confusion(
-            predictions, labels=[str(c) for c in CLASSES], title=f"{cfg.run_name}: test"
-        ),
-        "confusion_test.html",
-    )
-    tracker.finish()
-    print(
-        f"val F1 macro: {metrics['val_f1_macro']:.4f}, test F1 macro: {metrics['test_f1_macro']:.4f}"
-    )
-    return metrics
 
 
 # усложнение: callback пишет историю по эпохам — pytorch_tabular не отдаёт её, а кривые нужны для 1.3
@@ -313,65 +342,185 @@ def train_nn(cfg: Config) -> dict:
     """Обучает нейросеть, оценивает лучшую модель на test, сохраняет ран."""
     tracker = init_tracker(cfg)
     model, history, metrics = fit(cfg, tracker)
-    train_df, val_df, test_df = load_splits(cfg.seed)
-    test_frame = nn_frame(test_df)
-    y_test = test_frame[TARGET].to_numpy()
-    start = time.time()
-    proba = predict_proba(model, test_frame)
-    inference_time = time.time() - start
-    pred = proba.argmax(axis=1)
-    metrics.update({f"test_{k}": v for k, v in compute_metrics(y_test, pred, proba).items()})
-    metrics.update(
-        inference_time_sec=inference_time,
-        n_train=len(train_df),
-        n_val=len(val_df),
-        n_test=len(test_df),
-    )
-    tracker.summary(metrics)
     model.save_model(f"artifacts/{cfg.run_name}_best")
 
-    predictions = pd.DataFrame({"y_true": y_test + CLASSES[0], "y_pred": pred + CLASSES[0]})
-    for i, c in enumerate(CLASSES):
-        predictions[f"prob_{c}"] = proba[:, i]
+    def proba_fn(X: pd.DataFrame) -> np.ndarray:
+        return predict_proba(model, X.reset_index(drop=True))
 
-    tracker.log_inputs({"train": train_df, "val": val_df, "test": test_df}, source=DATASET)
-    run_dir = save_run(
+    features = load_splits(cfg.seed)[2].drop(columns=TARGET).columns
+    builtin = model.feature_importance().set_index("Features")["importance"]
+    return finish_run(
         cfg,
+        tracker,
+        proba_fn,
         history,
         metrics,
-        predictions,
-        device=get_device().type,
-        tracker_run=tracker.run_ref,
-        data=fingerprint(train_df, val_df, test_df),
+        get_device().type,
+        builtin.loc[features].to_numpy(),
     )
-    X_test = test_frame.drop(columns=TARGET)
-    builtin = model.feature_importance().set_index("Features")["importance"]
-    save_analysis(
-        run_dir,
+
+
+def make_tabldm(cfg: Config) -> TabLDMClassifier:
+    """TabLDM на устройстве get_device() с закреплённым чекпоинтом."""
+    return TabLDMClassifier(
+        n_estimators=cfg.tabldm_n_estimators,
+        enhance_candidates=cfg.tabldm_enhance,
+        device=str(get_device()),
+        random_state=cfg.seed,
+        model_path=hf_hub_download(TABLDM_REPO, TABLDM_CKPT, revision=TABLDM_REVISION),
+    )
+
+
+def train_tabldm(cfg: Config) -> dict:
+    """TabLDM: предобученная модель без обучения весов, fit только строит контекст из train."""
+    seed_everything(cfg.seed)
+    tracker = init_tracker(cfg)
+    train_df, _, _ = load_splits(cfg.seed)
+    X_train, y_train = to_xy(train_df)
+
+    clf = make_tabldm(cfg)
+    start = time.time()
+    # DataFrame принимается (проверено), аннотация библиотеки — np.ndarray
+    clf.fit(X_train, y_train)  # ty: ignore[invalid-argument-type]  # нормализация внутри, scaler не нужен
+    train_time = time.time() - start
+
+    metrics = {
+        "n_params": sum(p.numel() for p in clf.model_.parameters()),
+        "train_time_sec": train_time,
+    }
+    return finish_run(
         cfg,
-        lambda X: predict_proba(model, X),
-        X_test,
-        y_test,
-        builtin.loc[X_test.columns].to_numpy(),
+        tracker,
+        clf.predict_proba,
+        [],
+        metrics,
+        get_device().type,
+        np.full(X_train.shape[1], np.nan),
     )
-    tracker.log_artifacts(run_dir)
-    tracker.log_figure(
-        plot_confusion(
-            predictions, labels=[str(c) for c in CLASSES], title=f"{cfg.run_name}: test"
+
+
+def fit_tabm(cfg: Config, tracker=None) -> tuple:
+    """Обучение TabM с early stopping по val: функция predict_proba(DataFrame), история, val-метрики."""
+    if cfg.class_weights != "none":
+        raise ValueError("class_weights для TabM не реализованы")
+    seed_everything(cfg.seed)
+    device = get_device()
+    train_df, val_df, _ = load_splits(cfg.seed)
+    X_train, y_train = to_xy(train_df)
+    X_val, y_val = to_xy(val_df)
+
+    # усложнение: квантильное преобразование и кусочно-линейные эмбеддинги по бинам train — рекомендуемое кодирование чисел для TabM (task.md, этап 6)
+    qt = QuantileTransformer(
+        output_distribution="normal", n_quantiles=min(1000, len(X_train)), random_state=cfg.seed
+    )
+
+    def to_tensor(X: pd.DataFrame) -> torch.Tensor:
+        return torch.tensor(qt.transform(X), dtype=torch.float32, device=device)
+
+    qt.fit(X_train)
+    x_train, x_val = to_tensor(X_train), to_tensor(X_val)
+    t_train = torch.tensor(y_train, device=device)
+    t_val = torch.tensor(y_val, device=device)
+    bins = compute_bins(x_train.cpu(), n_bins=cfg.tabm_n_bins)
+
+    model = TabM.make(
+        n_num_features=x_train.shape[1],
+        d_out=len(CLASSES),
+        num_embeddings=PiecewiseLinearEmbeddings(
+            bins, d_embedding=cfg.tabm_d_embedding, activation=False, version="B"
         ),
-        "confusion_test.html",
+        k=cfg.tabm_k,
+        n_blocks=cfg.tabm_n_blocks,
+        d_block=cfg.tabm_d_block,
+        dropout=cfg.tabm_dropout,
+    ).to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+    generator = torch.Generator().manual_seed(cfg.seed)
+    k = cfg.tabm_k
+
+    history = []
+    best_loss, best_state, bad_epochs = float("inf"), {}, 0
+    start = time.time()
+    for epoch in range(1, cfg.epochs + 1):
+        model.train()
+        batch_losses = []
+        for idx in torch.randperm(len(x_train), generator=generator).split(cfg.batch_size):
+            idx = idx.to(device)
+            logits = model(x_train[idx])  # (B, k, классы)
+            # каждая из k голов обучается независимо со своей CrossEntropy
+            loss = torch.nn.functional.cross_entropy(
+                logits.reshape(-1, logits.shape[-1]), t_train[idx].repeat_interleave(k)
+            )
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            batch_losses.append(loss.item())
+
+        model.eval()
+        with torch.inference_mode():
+            probs = model(x_val).softmax(dim=-1).mean(dim=1)
+        val_loss = torch.nn.functional.nll_loss(probs.clamp_min(1e-12).log(), t_val).item()
+        row = {
+            "epoch": epoch,
+            "train_loss": sum(batch_losses) / len(batch_losses),
+            "val_loss": val_loss,
+        }
+        history.append(row)
+        if tracker is not None:
+            tracker.log({"train_loss": row["train_loss"], "val_loss": val_loss}, step=epoch)
+
+        if val_loss < best_loss:
+            best_loss, bad_epochs = val_loss, 0
+            best_state = copy.deepcopy(model.state_dict())
+        else:
+            bad_epochs += 1
+            if bad_epochs >= cfg.patience:
+                break
+    train_time = time.time() - start
+    model.load_state_dict(best_state)
+    model.eval()
+
+    def proba_fn(X: pd.DataFrame) -> np.ndarray:
+        """Вероятности классов (n, 6): среднее по k головам."""
+        x = to_tensor(X)
+        with torch.inference_mode():
+            parts = [model(b).softmax(dim=-1).mean(dim=1) for b in x.split(1024)]
+        return torch.cat(parts).cpu().numpy()
+
+    proba = proba_fn(X_val)
+    metrics = {
+        f"val_{name}": v for name, v in compute_metrics(y_val, proba.argmax(axis=1), proba).items()
+    }
+    metrics.update(
+        best_epoch=min(history, key=lambda r: r["val_loss"])["epoch"],
+        epochs_trained=len(history),
+        n_params=sum(p.numel() for p in model.parameters() if p.requires_grad),
+        train_time_sec=train_time,
     )
-    tracker.finish()
-    print(
-        f"val F1 macro: {metrics['val_f1_macro']:.4f}, test F1 macro: {metrics['test_f1_macro']:.4f}"
+    return proba_fn, model, history, metrics
+
+
+def train_tabm(cfg: Config) -> dict:
+    """Обучает TabM, оценивает лучшую модель на test, сохраняет ран."""
+    tracker = init_tracker(cfg)
+    proba_fn, model, history, metrics = fit_tabm(cfg, tracker)
+    torch.save(model.state_dict(), f"artifacts/{cfg.run_name}_best.pt")
+    return finish_run(
+        cfg, tracker, proba_fn, history, metrics, get_device().type, np.full(16, np.nan)
     )
-    return metrics
 
 
 def train(cfg: Config) -> dict:
     """Обучение выбранной cfg.model."""
     check_new_run(cfg.run_name)
-    return train_catboost(cfg) if cfg.model == "catboost" else train_nn(cfg)
+    trainers = {
+        "catboost": train_catboost,
+        "tabldm": train_tabldm,
+        "tabm": train_tabm,
+        "ft_transformer": train_nn,
+        "gandalf": train_nn,
+    }
+    return trainers[cfg.model](cfg)
 
 
 def benchmark_nn(cfg: Config, k: int) -> None:
@@ -389,8 +538,42 @@ def benchmark_nn(cfg: Config, k: int) -> None:
     )
 
 
+def benchmark_tabm(cfg: Config, k: int) -> None:
+    """Замер времени k эпох TabM без early stopping, оценка полного обучения."""
+    # patience=k: за k эпох early stopping не успевает сработать
+    *_, metrics = fit_tabm(replace(cfg, epochs=k, patience=k))
+    sec_per_epoch = metrics["train_time_sec"] / k
+    print(f"{sec_per_epoch:.3f} сек/эпоха")
+    print(
+        f"оценка полного обучения (до {cfg.epochs} эпох, верхняя граница): "
+        f"{sec_per_epoch * cfg.epochs:.1f} сек"
+    )
+
+
+def benchmark_tabldm(cfg: Config) -> None:
+    """Замер fit и predict на test для TabLDM, оценка полного рана."""
+    train_df, _, test_df = load_splits(cfg.seed)
+    X_train, y_train = to_xy(train_df)
+    X_test, _ = to_xy(test_df)
+    clf = make_tabldm(cfg)
+    start = time.time()
+    clf.fit(X_train, y_train)  # ty: ignore[invalid-argument-type]
+    fit_time = time.time() - start
+    start = time.time()
+    clf.predict_proba(X_test)  # ty: ignore[invalid-argument-type]
+    predict_time = time.time() - start
+    print(f"fit: {fit_time:.1f} сек, predict на test: {predict_time:.1f} сек")
+    # predict: val + test + permutation importance (16 признаков × perm_repeats); ручные объекты малы
+    total = fit_time + predict_time * (2 + 16 * cfg.perm_repeats)
+    print(f"оценка полного рана: {total:.1f} сек")
+
+
 def benchmark(cfg: Config, k: int) -> None:
     """Замер времени k итераций на полных данных, оценка полного обучения."""
+    if cfg.model == "tabm":
+        return benchmark_tabm(cfg, k)
+    if cfg.model == "tabldm":
+        return benchmark_tabldm(cfg)
     if cfg.model != "catboost":
         return benchmark_nn(cfg, k)
     train_df, val_df, _ = load_splits(cfg.seed)
@@ -426,7 +609,10 @@ if __name__ == "__main__":
         key, value = item.split("=", 1)
         if not hasattr(cfg, key):
             parser.error(f"неизвестное поле Config: {key}")
-        cfg = replace(cfg, **{key: type(getattr(cfg, key))(value)})
+        field_type = type(getattr(cfg, key))
+        # bool("False") is True, поэтому для bool разбираем строку явно
+        parsed = value.lower() == "true" if field_type is bool else field_type(value)
+        cfg = replace(cfg, **{key: parsed})
     cfg = cfg.smoke_if_needed()
     if args.benchmark:
         benchmark(cfg, args.benchmark)
