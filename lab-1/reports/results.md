@@ -32,6 +32,9 @@
 | v47–v49 | H4: 256 × 3, dropout 0.3, 3 seeds, среднее (v47 / v48 / v49) | TabM | 0.3346 | 0.3292 | runs/v47, v48, v49 |
 | v50 | H5: n_estimators 1 | TabLDM | 0.3906 | 0.3246 | runs/v50 |
 | v51 | H5: n_estimators 4 | TabLDM | 0.3906 | 0.3259 | runs/v51 |
-| **v52** | **H5: n_estimators 8** | **TabLDM** | **0.4039** | **0.3246** | **runs/v52** |
+| v52 | H5: n_estimators 8 | TabLDM | 0.4039 | 0.3246 | runs/v52 |
 | v53 | H5: n_estimators 16 (повтор v13) | TabLDM | 0.3933 | 0.3246 | runs/v53 |
 | v54 | H5: n_estimators 32 | TabLDM | 0.4025 | 0.3235 | runs/v54 |
+| **v55** | **H6: enhance выкл, n_estimators 8** | **TabLDM** | **0.4096** | **0.3246** | **runs/v55** |
+| v56 | H6: enhance выкл, n_estimators 16 | TabLDM | 0.4065 | 0.3260 | runs/v56 |
+| v57 | H6: enhance выкл, n_estimators 32 | TabLDM | 0.4049 | 0.3263 | runs/v57 |
