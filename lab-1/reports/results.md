@@ -38,3 +38,4 @@
 | **v55** | **H6: enhance выкл, n_estimators 8** | **TabLDM** | **0.4096** | **0.3246** | **runs/v55** |
 | v56 | H6: enhance выкл, n_estimators 16 | TabLDM | 0.4065 | 0.3260 | runs/v56 |
 | v57 | H6: enhance выкл, n_estimators 32 | TabLDM | 0.4049 | 0.3263 | runs/v57 |
+| v58 | H7: поправка на приоры, alpha по val (выбрана 0) | TabLDM | 0.4096 | 0.3246 | runs/v58 |
