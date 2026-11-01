@@ -73,7 +73,7 @@ ml-3/
     ├── runs/vN/            # run snapshots, committed (*-smoke ignored)
     ├── runs/tune/<study>.db  # Optuna studies, committed
     ├── reports/            # iterations/vN.md, results.md
-    ├── submission/         # packed notebook
+    ├── submission/         # files to hand in, built locally, gitignored
     ├── data/               # datasets, gitignored
     └── artifacts/          # checkpoints, gitignored
 ```

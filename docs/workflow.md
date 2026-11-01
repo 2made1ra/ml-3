@@ -167,7 +167,7 @@
 ```
 /write-conclusion      # «Итоговые выводы» — просмотр результатов и черновиков обязателен
 /lab-review            # сверка с этапами task.md и «Оформлением и сдачей»; лучше в новой сессии (/clear)
-/pack-submission       # единый ipynb → lab-N/submission/
+/pack-submission       # единый ipynb → lab-N/submission/ (локально, не в git)
 /prep-defense          # вопросы к защите с ответами → reports/defense.md; /prep-defense quiz — тренировка
 ```
 

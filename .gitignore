@@ -39,6 +39,5 @@ secrets.yaml
 # Временная папка pytorch_tabular
 lab-*/.pt_tmp/
 
-# архив сдачи и его папка: копии runs/ и src/
-lab-*/submission/*.zip
-lab-*/submission/lab-*/
+# файлы на сдачу собираются локально перед отправкой: копии ноутбука, runs/ и src/
+lab-*/submission/
