@@ -44,3 +44,8 @@
 | v59–v83 | финал, 5 seeds 42–46, среднее (v69–v73) | FT-Transformer | 0.2713 | 0.2624 | runs/v69…v73 |
 | v59–v83 | финал, 5 seeds 42–46, среднее (v74–v78), n 8, enhance выкл | TabLDM | 0.3545 | 0.3517 | runs/v74…v78 |
 | v59–v83 | финал, 5 seeds 42–46, среднее (v79–v83), 256 × 3, lr 9e-3, wd 3e-5 | TabM | 0.3421 | 0.3294 | runs/v79…v83 |
+| v84–v103 | H9: TabLDM norm_methods none, 5 seeds, среднее (v84–v88) | TabLDM | 0.3795 | 0.3528 | runs/v84…v88 |
+| v84–v103 | H9: TabLDM norm_methods power, 5 seeds, среднее (v89–v93) | TabLDM | 0.3736 | 0.3524 | runs/v89…v93 |
+| v84–v103 | H9: TabLDM norm_methods quantile, 5 seeds, среднее (v94–v98) | TabLDM | 0.3538 | 0.3456 | runs/v94…v98 |
+| v84–v103 | H9: TabLDM norm_methods robust, 5 seeds, среднее (v99–v103) | TabLDM | 0.3577 | 0.3543 | runs/v99…v103 |
+| v104–v108 | H8: TabM без эмбеддингов, lr 6e-3, wd 6e-4 (`tune-tabm-noemb`), 5 seeds, среднее | TabM | 0.3028 | 0.3095 | runs/v104…v108 |
