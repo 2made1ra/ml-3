@@ -4,6 +4,7 @@ import argparse
 import copy
 import time
 from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -654,6 +655,7 @@ if __name__ == "__main__":
         weight_decay=args.weight_decay,
     )
     cfg = apply_set(cfg, args.set).smoke_if_needed()
+    Path("artifacts").mkdir(exist_ok=True)  # чекпоинты; в git и архиве сдачи папки нет
     if args.benchmark:
         benchmark(cfg, args.benchmark)
     else:
