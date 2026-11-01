@@ -12,7 +12,7 @@
 | v10 | финальный перезапуск v1 + importance, ручные объекты | CatBoost | 0.2925 | 0.3293 | runs/v10 |
 | v11 | финальный перезапуск v4 + importance, ручные объекты | GANDALF | 0.2907 | 0.3041 | runs/v11 |
 | v12 | финальный перезапуск v5 + importance, ручные объекты (не повторил v5: MPS) | FT-Transformer | 0.2892 | 0.3032 | runs/v12 |
-| **v13** | **TabLDM «из коробки» (n_estimators 16, enhance), без обучения весов** | **TabLDM** | **0.3933** | **0.3246** | **runs/v13** |
+| v13 | TabLDM «из коробки» (n_estimators 16, enhance), без обучения весов | TabLDM | 0.3933 | 0.3246 | runs/v13 |
 | v14 | TabM «из коробки» (k 32, 2×512, PLE-эмбеддинги), lr 2e-3, wd 3e-4 | TabM | 0.2886 | 0.3009 | runs/v14 |
 | v15 | H1: lr 9e-3, wd 3e-5 из Optuna (`tune-tabm-lr`) | TabM | 0.3542 | 0.3188 | runs/v15 |
 | v16 | H2: k 1 (lr 9e-3, wd 3e-5 как в v15) | TabM | 0.2881 | 0.2895 | runs/v16 |
@@ -30,3 +30,8 @@
 | v21–v46 | H3: 512 × 2, 3 seeds, среднее (v15 / v36 / v45) | TabM | 0.3080 | 0.3049 | runs/v15, v36, v45 |
 | v21–v46 | H3: 512 × 3, 3 seeds, среднее (v28 / v37 / v46) | TabM | 0.2765 | 0.2670 | runs/v28, v37, v46 |
 | v47–v49 | H4: 256 × 3, dropout 0.3, 3 seeds, среднее (v47 / v48 / v49) | TabM | 0.3346 | 0.3292 | runs/v47, v48, v49 |
+| v50 | H5: n_estimators 1 | TabLDM | 0.3906 | 0.3246 | runs/v50 |
+| v51 | H5: n_estimators 4 | TabLDM | 0.3906 | 0.3259 | runs/v51 |
+| **v52** | **H5: n_estimators 8** | **TabLDM** | **0.4039** | **0.3246** | **runs/v52** |
+| v53 | H5: n_estimators 16 (повтор v13) | TabLDM | 0.3933 | 0.3246 | runs/v53 |
+| v54 | H5: n_estimators 32 | TabLDM | 0.4025 | 0.3235 | runs/v54 |
