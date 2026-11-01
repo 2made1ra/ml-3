@@ -50,6 +50,9 @@
 - 2026-11-01, этап 7: H5–H6 TabLDM (v50–v57) на seed 42 с `perm_repeats=0`: permutation importance — только у финальных ранов. Финальный TabLDM — n 8, enhance выкл (v55): val 0.4096, inference 2.9 с. Дальше: H7 на v55, затем `/tune` lr / wd TabM 256 × 3 и финальные 5 seeds всех моделей.
 - 2026-11-01, этап 7: H7 (v58) не подтвердилась — по val выбрана alpha 0, предсказания совпали с v55. TabLDM закрыт по «≥ 3 гипотезы» (H5–H7), финальный — v55 без поправки. Дальше: `/tune` lr / wd TabM 256 × 3, затем финальные 5 seeds всех моделей.
 
+- 2026-11-01, этап 7: study `tune-tabm-256x3` (30 trials, lr / wd для 256 × 3): лучший trial 0.4185 (lr 9.9e-3, wd 2.5e-3) — одиночный выброс, следующие ≤ 0.320; v26 с lr 9e-3 / wd 3e-5 на том же seed 42 — 0.4235. Финальный TabM: 256 × 3, k 32, dropout 0.1, lr 9e-3, wd 3e-5 (пользователь).
+- 2026-11-01, этап 7: финальные раны — 5 seeds 42–46 на модель, v59–v83: CatBoost v59–v63, GANDALF v64–v68, FT-Transformer v69–v73, TabLDM v74–v78, TabM v79–v83. `load_splits(seed)` меняет и разбиение train / val (test фиксирован), разброс включает шум разбиения. TabLDM: permutation importance только у seed 42 (`perm_repeats=3`), у остальных 0.
+
 ## Оформление и сдача
 
 - Ноутбук читается как технический отчёт: Постановка задачи → Данные → Preprocessing → Baseline → Neural models → Hyperparameter experiments → Test → Анализ ошибок → Интерпретация → Новые ручные объекты → Выводы (`assignment.md`, «Требования к оформлению notebook»).
