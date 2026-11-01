@@ -35,3 +35,10 @@ secrets.yaml
 # OS / IDE
 .DS_Store
 .claude/settings.local.json
+
+# Временная папка pytorch_tabular
+lab-*/.pt_tmp/
+
+# архив сдачи и его папка: копии runs/ и src/
+lab-*/submission/*.zip
+lab-*/submission/lab-*/

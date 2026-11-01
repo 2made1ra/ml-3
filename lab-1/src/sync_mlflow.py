@@ -56,6 +56,8 @@ def _import_run(client: MlflowClient, summary: dict, history: pd.DataFrame, snap
             "host": str(summary.get("host")),
             "device": str(summary.get("device")),
             "git_commit": str(summary.get("git_commit")),
+            **{f"env.{k}": str(v) for k, v in _flatten(summary.get("env") or {}).items()},
+            **{f"data.{k}": str(v) for k, v in _flatten(summary.get("data") or {}).items()},
         },
     )
     run_id = run.info.run_id

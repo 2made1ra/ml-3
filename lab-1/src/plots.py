@@ -53,3 +53,24 @@ def plot_runs(table: pd.DataFrame, metric: str, title: str | None = None) -> go.
         title=title or f"{metric} по итерациям", xaxis_title="run", yaxis_title=metric
     )
     return fig
+
+
+def plot_importance(
+    df: pd.DataFrame, value: str, error: str | None = None, title: str = "Importance признаков"
+) -> go.Figure:
+    """Сгруппированные горизонтальные столбцы importance по моделям (df: model, feature, value[, error])."""
+    order = df.groupby("feature")[value].mean().sort_values().index.tolist()
+    fig = go.Figure()
+    for model, part in df.groupby("model", sort=False):
+        part = part.set_index("feature").loc[order]
+        fig.add_bar(
+            y=order,
+            x=part[value],
+            error_x={"type": "data", "array": part[error]} if error else None,
+            orientation="h",
+            name=model,
+        )
+    fig.update_layout(
+        title=title, xaxis_title=value, yaxis_title="признак", barmode="group", height=700
+    )
+    return fig

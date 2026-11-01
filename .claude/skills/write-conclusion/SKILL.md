@@ -27,4 +27,5 @@ Read `style-guide.md` (next to this file) in full before writing.
 ## 4. Insert
 
 - Insert as a markdown cell right after the related cell (NotebookEdit, `cell_type: markdown`), unless the user asked to see it in chat.
+- Run the `numbers-checker` agent (Haiku) on the inserted cells; Sources: the files from step 2. Confirm each mismatch yourself, fix the confirmed ones.
 - Tell the user which spots to check: hedged interpretations and the personal remark (they must confirm it matches their experience).

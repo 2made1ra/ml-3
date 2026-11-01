@@ -74,4 +74,4 @@ Mark the best row in **bold**. Do not edit old rows except to fix clear errors.
 
 ## 4. Finish
 
-Tell the user in 2–3 lines: result, Δ to the best, proposed next step. If the notebook does not show this run yet (`load_run('vN')`), propose adding it via `/code-lab`. Commit only on request: `docs(labN): итерация vN — ...`.
+Tell the user in 2–3 lines: result, Δ to the best, proposed next step. If the notebook does not show this run yet (`load_run('vN')`), propose adding it via `/code-lab`. Commit: under `/lab-flow` right away, as its section 2 says (`run(labN): vN — …` with `runs/vN/` and `reports/`); otherwise only on request.

@@ -43,7 +43,7 @@ Board: when work on a stage starts, set its kvatask task to «в работе»;
 
 ### 2. Spec
 
-Call `Agent` with `subagent_type: "lab-coder"` (in `all` mode, continue the same subagent via `SendMessage` while its context helps; start a fresh one if context is stale). The spec is in English and self-contained; rules already in `.claude/rules/` need no repeating.
+Call `Agent` with `subagent_type: "lab-coder"` (in `all` mode, continue the same subagent via `SendMessage` while its context helps; start a fresh one if context is stale). The spec is in English and self-contained; rules already in `.claude/rules/` need no repeating. Point to files instead of retyping them (`task/task.md` «Этап K», `assignment.md` sections, an existing function as the pattern): the spec holds only decisions.
 
 ```
 Lab: <absolute path to lab-N>

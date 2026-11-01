@@ -40,7 +40,7 @@ Applies to chat, agent messages, instruction files and code.
 6. `/log-iteration`: iteration log. The notebook plots from `runs/`.
 7. `/write-conclusion` → `/lab-review` → `/pack-submission`; `/prep-defense` before the defense.
 
-`/lab-flow N` drives steps 1–7 itself: it calls the skills in order and asks the user before every step.
+`/lab-flow N` drives steps 1–7 itself: it calls the skills in order, one stage per fresh session (state lives in files; `/continue-lab` resumes), lets the user pick experiment hypotheses, and otherwise asks only at critical points.
 
 `runs/*/summary.json` is the source of truth for numbers. MLflow is only a dashboard. The notebook is the submission: it reads `runs/` and does not retrain.
 
@@ -53,7 +53,8 @@ Local files are the source of truth for tasks: `task/task.md` (stages, their con
 
 - **Main model**: decisions (task analysis, approach, experiments), specs, code review, result analysis, conclusions. Does not write `src/` code, except one-line fixes after review.
 - **`lab-coder` subagent (Sonnet, medium effort)**: writes code from a spec. Defined in `.claude/agents/lab-coder.md`.
-- **User**: edits conclusions; chooses who starts each full training or tuning run. Claude gives the command and asks; it never starts a full run without that answer. Claude starts runs only on the Mac, in the background; PC runs are the user's. Smoke and `--benchmark` Claude runs itself.
+- **`numbers-checker` subagent (Haiku)**: read-only check of numbers in conclusions and reports against `runs/`, from `/write-conclusion` and `/lab-review`. Defined in `.claude/agents/numbers-checker.md`.
+- **User**: picks experiment hypotheses from Claude's proposals; edits conclusions; chooses who starts each full training or tuning run. Claude gives the command and asks; it never starts a full run without that answer. Exception: under `/lab-flow`, Mac runs ≤ 20 min Claude starts itself (`.claude/skills/lab-flow/SKILL.md`, section 2). Claude starts runs only on the Mac, in the background; PC runs are the user's. Smoke and `--benchmark` Claude runs itself.
 - Numbers in conclusions and reports come only from `runs/`, cell outputs or MLflow. Never invent them.
 - A model, library or approach the user chose does not work: stop and decide with the user. Never switch to a fallback alone.
 
@@ -105,7 +106,7 @@ SMOKE=1 uv run python -m src.train --run smoke
 
 - `seed_everything(cfg.seed)` at the start of every run. All hyperparameters live in `Config` and go to MLflow and `summary.json`.
 - Splits are seeded. Test data never drives model or hyperparameter selection.
-- Dataset versions are pinned (`.claude/rules/training-code.md`). `summary.json` records `git_commit` and `git_dirty`.
+- Dataset versions are pinned (`.claude/rules/training-code.md`). `summary.json` records `git_commit`, `git_dirty`, the environment (`env`), the data fingerprint (`data`) and peak memory (`resources`). Runs are immutable: a run name is never reused. MLflow gets the same plus datasets, artifacts, system metrics and Optuna trials as nested runs.
 
 ## Secrets
 
@@ -127,5 +128,5 @@ SMOKE=1 uv run python -m src.train --run smoke
   - The branch is kept after the merge: board links point to it.
 - Commit types: `feat(labN)`, `bug(labN)`, `docs(labN)`, `run(labN): vN — ...` (training results), `chore`. Message in Russian.
 - Pre-commit hooks (prek, `.pre-commit-config.yaml`): gitleaks, files > 5 MB, `ruff check`. Never bypass them with `--no-verify`; fix the cause.
-- Commit only when the user asks. Before committing, check that `data/`, `artifacts/`, `mlflow.db`, `mlruns/`, `mlartifacts/` are not staged.
+- Commit only when the user asks. Exception: under `/lab-flow` Claude commits each experiment itself (`.claude/skills/lab-flow/SKILL.md`, section 2). Before committing, check that `data/`, `artifacts/`, `mlflow.db`, `mlruns/`, `mlartifacts/` are not staged.
 - Commit notebook outputs (plots must be visible).

@@ -13,6 +13,8 @@ dependencies = [
     "kaleido",  # PNG-фолбэк для графиков (использует установленный Chrome)
     "tqdm",
     "mlflow",
+    "psutil",  # системные метрики MLflow
+    "nvidia-ml-py; sys_platform == 'linux'",  # метрики GPU на PC
 ]
 
 [dependency-groups]
@@ -48,6 +50,8 @@ explicit = true
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+extend-exclude = ["submission"]  # склейка /pack-submission: повторные импорты модулей
+force-exclude = true  # исключение действует и на файлы от pre-commit
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "NPY"]

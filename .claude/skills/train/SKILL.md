@@ -12,7 +12,9 @@ Training uses the same command on either machine. The user chooses who starts it
 
 - Run name: next after the latest `runs/v*` (excluding `-smoke`), unless the user names one.
 - Smoke must pass (see "Checks" in `CLAUDE.md`).
-- Code is committed, also before a Mac run (commit only with the user's consent): then `git_commit` in `summary.json` identifies it; otherwise the run is marked `git_dirty`.
+- Code is committed, also before a Mac run: then `git_commit` in `summary.json` identifies it; otherwise the run is marked `git_dirty`. Under `/lab-flow` Claude commits itself (its section 2); otherwise only with the user's consent.
+- The command tags the run with the plan: `--set stage=K --set hypothesis=H<n> --set baseline_run=vM` (MLflow params; filter in the UI by `params.hypothesis`).
+- A run name is never reused: `train` fails at once if `runs/vN/` exists (`check_new_run`).
 - If the iteration needs nuisance hyperparameters (usually lr) tuned, run `/tune` first.
 
 ## 2. Estimate Mac time

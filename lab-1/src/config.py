@@ -12,16 +12,63 @@ class Config:
     run_name: str = "v1"
     tracker: str = "mlflow"  # mlflow | none (можно переопределить env TRACKER)
     seed: int = 42
+    stage: int = 0  # этап из task.md
+    hypothesis: str = ""  # H<n> из «Гипотез» этапа
+    baseline_run: str = ""  # ран, с которым сравниваем
+    model: str = "catboost"  # catboost | ft_transformer | gandalf | tabldm | tabm
 
     # данные
     batch_size: int = 64
-    num_workers: int = 4
+    num_workers: int = 0  # 1023 строки, воркеры на macOS только замедляют
     data_fraction: float = 1.0  # доля train для быстрых экспериментов
 
     # обучение
-    epochs: int = 20
+    epochs: int = 200  # максимум, останавливает early stopping
+    patience: int = 20  # early stopping по val loss
     lr: float = 1e-3
     weight_decay: float = 1e-4
+    class_weights: str = "none"  # none | balanced
+
+    # анализ финальных моделей
+    perm_repeats: int = 10  # перестановок на признак в permutation importance
+
+    # CatBoost (параметры Optuna из ml-2 ЛР1)
+    cb_iterations: int = 476
+    cb_learning_rate: float = 0.07179
+    cb_depth: int = 10
+    cb_l2_leaf_reg: float = 4.9186
+    cb_border_count: int = 226
+    cb_early_stopping: int = 50
+
+    # FT-Transformer (значения по умолчанию pytorch_tabular 1.2.0)
+    ft_embed_dim: int = 32
+    ft_num_heads: int = 8
+    ft_num_attn_blocks: int = 6
+    ft_attn_dropout: float = 0.1
+    ft_ff_dropout: float = 0.1
+
+    # GANDALF (значения по умолчанию pytorch_tabular 1.2.0)
+    gandalf_stages: int = 6
+    gandalf_dropout: float = 0.0
+    gandalf_init_sparsity: float = 0.3
+
+    # TabLDM (значения по умолчанию xiaomi-tabldm)
+    tabldm_n_estimators: int = 16
+    # усложнение: выключается в smoke — полный режим строит 64 кандидата с 5-fold OOF (fit 96 с на v13)
+    tabldm_enhance: bool = True  # enhance_candidates
+    # вероятности делятся на приоры классов train в степени alpha, alpha выбирается по val
+    tabldm_prior_correction: bool = False
+    # список через запятую для TabLDMClassifier(norm_methods=...), по умолчанию как в библиотеке ["none", "power"]
+    tabldm_norm_methods: str = "none,power"
+
+    # TabM (значения по умолчанию TabM.make с эмбеддингами)
+    tabm_k: int = 32
+    tabm_n_blocks: int = 2
+    tabm_d_block: int = 512
+    tabm_dropout: float = 0.1
+    tabm_n_bins: int = 48
+    tabm_d_embedding: int = 16
+    tabm_num_embeddings: str = "ple"  # ple | none
 
     def smoke_if_needed(self) -> "Config":
         """При SMOKE=1 возвращает урезанный конфиг для быстрой проверки, иначе себя."""
@@ -34,5 +81,8 @@ class Config:
             epochs=1,
             batch_size=min(self.batch_size, 16),
             num_workers=0,
-            data_fraction=0.01,
+            cb_iterations=20,
+            perm_repeats=1,
+            tabldm_n_estimators=1,
+            tabldm_enhance=False,
         )

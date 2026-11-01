@@ -23,6 +23,7 @@ Tools are deferred: load them with ToolSearch `select:mcp__kvatask__<name>,...`.
 | Create stage tasks | `bulk_create_tasks`: `project_prefix`, `tasks: [{title, type: "task", status: "todo", description}]`; returns `display_id` per item, in order |
 | Link a task to the epic | `create_task_link`: `task_id: <epic>`, `linked_task_id: <task>`, `link_type: "subtask"` (one call per task; `create_task` has no parent field) |
 | Update title, description, status, due date | `update_task`: `task_id` + changed fields only (`due_date: "null"` clears); many at once: `bulk_update_tasks` |
+| Comment on a task | `create_comment`: `task_id`, `text` — plain text with mini-markdown only (`**bold**`, newlines); URLs as plain text |
 | List the epic's tasks | `list_task_links`: `task_id: <epic>` → `subtask → DL-n: <title>` lines; details: `bulk_get_tasks` |
 
 Type codes: `epic`, `task`. A wrong code returns `ERR_INVALID_*` with `valid_codes`.
@@ -30,7 +31,7 @@ Type codes: `epic`, `task`. A wrong code returns `ERR_INVALID_*` with `valid_cod
 | `task.md` | Board status |
 | --- | --- |
 | new stage | `todo` |
-| work on the stage started (`/code-lab`) | `in_progress` |
+| work on the stage started (`/code-lab`, `/lab-flow`) | `in_progress` |
 | `### [x]` | `done` |
 
 ## 3. Links in task.md
@@ -55,7 +56,7 @@ Every description ends with a «Подробно» block of clickable links to t
    Create missing tasks; update only fields that differ.
 3. Status:
    - `[x]` → done.
-   - `[ ]` → keep the board status, since «в работе» is set by `/code-lab`. A new task → to do.
+   - `[ ]` → keep the board status, since «в работе» is set by `/code-lab` and `/lab-flow`. A new task → to do.
    - Done on the board but `[ ]` in `task.md`: ask the user. Stage really done → tick `task.md` first, then sync. Otherwise → reset the board status.
 4. A board task whose stage is gone from `task.md`: report it. Never delete board tasks without the user's consent.
 5. Tasks in the epic without a link in `task.md` (added by the user): list them and propose for each: a new stage via `/plan-lab`, or a one-off `/code-lab <задача>`.
@@ -63,3 +64,17 @@ Every description ends with a «Подробно» block of clickable links to t
 ## 5. Report (Russian)
 
 One line per created or updated task (`Этап K — создана / обновлено: <поля> / статус → <статус>`), then the lists from steps 3–5 of "Sync".
+
+## 6. Stage report
+
+When a stage is closed (`/lab-flow`, section 3, step 3), after the sync: one `create_comment` on the stage's task. Russian, numbers only from `runs/`:
+
+```
+**Этап K закрыт**
+Сделано: <1–3 строки>
+Результаты: <ран — модель — val/test основная метрика>, …
+Гипотезы: <H1 — подтвердилась / нет, vN>, … (или «—»)
+Решения и отклонения от плана: <…> (или «нет»)
+Усложнения: <что — зачем> (или «нет»)
+Подробно: <URL каждого vN.md этапа, база ссылок из раздела 4>
+```
