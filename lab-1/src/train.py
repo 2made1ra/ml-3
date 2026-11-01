@@ -366,6 +366,7 @@ def make_tabldm(cfg: Config) -> TabLDMClassifier:
     return TabLDMClassifier(
         n_estimators=cfg.tabldm_n_estimators,
         enhance_candidates=cfg.tabldm_enhance,
+        norm_methods=cfg.tabldm_norm_methods.split(","),
         device=str(get_device()),
         random_state=cfg.seed,
         model_path=hf_hub_download(TABLDM_REPO, TABLDM_CKPT, revision=TABLDM_REVISION),
@@ -439,7 +440,7 @@ def fit_tabm(cfg: Config, tracker=None) -> tuple:
     X_train, y_train = to_xy(train_df)
     X_val, y_val = to_xy(val_df)
 
-    # усложнение: квантильное преобразование и кусочно-линейные эмбеддинги по бинам train — рекомендуемое кодирование чисел для TabM (task.md, этап 6)
+    # усложнение: квантильное преобразование и кусочно-линейные эмбеддинги по бинам train — рекомендуемое кодирование чисел для TabM (task.md, этап 6); эмбеддинги выключаются tabm_num_embeddings=none (H8)
     qt = QuantileTransformer(
         output_distribution="normal", n_quantiles=min(1000, len(X_train)), random_state=cfg.seed
     )
@@ -451,14 +452,20 @@ def fit_tabm(cfg: Config, tracker=None) -> tuple:
     x_train, x_val = to_tensor(X_train), to_tensor(X_val)
     t_train = torch.tensor(y_train, device=device)
     t_val = torch.tensor(y_val, device=device)
-    bins = compute_bins(x_train.cpu(), n_bins=cfg.tabm_n_bins)
+    if cfg.tabm_num_embeddings == "ple":
+        bins = compute_bins(x_train.cpu(), n_bins=cfg.tabm_n_bins)
+        num_embeddings = PiecewiseLinearEmbeddings(
+            bins, d_embedding=cfg.tabm_d_embedding, activation=False, version="B"
+        )
+    elif cfg.tabm_num_embeddings == "none":
+        num_embeddings = None
+    else:
+        raise ValueError(f"tabm_num_embeddings: ple | none, получено {cfg.tabm_num_embeddings}")
 
     model = TabM.make(
         n_num_features=x_train.shape[1],
         d_out=len(CLASSES),
-        num_embeddings=PiecewiseLinearEmbeddings(
-            bins, d_embedding=cfg.tabm_d_embedding, activation=False, version="B"
-        ),
+        num_embeddings=num_embeddings,
         k=cfg.tabm_k,
         n_blocks=cfg.tabm_n_blocks,
         d_block=cfg.tabm_d_block,

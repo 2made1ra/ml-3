@@ -58,6 +58,8 @@ class Config:
     tabldm_enhance: bool = True  # enhance_candidates
     # вероятности делятся на приоры классов train в степени alpha, alpha выбирается по val
     tabldm_prior_correction: bool = False
+    # список через запятую для TabLDMClassifier(norm_methods=...), по умолчанию как в библиотеке ["none", "power"]
+    tabldm_norm_methods: str = "none,power"
 
     # TabM (значения по умолчанию TabM.make с эмбеддингами)
     tabm_k: int = 32
@@ -66,6 +68,7 @@ class Config:
     tabm_dropout: float = 0.1
     tabm_n_bins: int = 48
     tabm_d_embedding: int = 16
+    tabm_num_embeddings: str = "ple"  # ple | none
 
     def smoke_if_needed(self) -> "Config":
         """При SMOKE=1 возвращает урезанный конфиг для быстрой проверки, иначе себя."""
