@@ -56,6 +56,8 @@ class Config:
     tabldm_n_estimators: int = 16
     # усложнение: выключается в smoke — полный режим строит 64 кандидата с 5-fold OOF (fit 96 с на v13)
     tabldm_enhance: bool = True  # enhance_candidates
+    # вероятности делятся на приоры классов train в степени alpha, alpha выбирается по val
+    tabldm_prior_correction: bool = False
 
     # TabM (значения по умолчанию TabM.make с эмбеддингами)
     tabm_k: int = 32

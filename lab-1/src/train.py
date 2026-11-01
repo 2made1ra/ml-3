@@ -42,6 +42,7 @@ ACCELERATORS = {"cuda": "gpu", "mps": "mps", "cpu": "cpu"}
 TABLDM_REPO = "occams/Xiaomi-TabLDM"
 TABLDM_CKPT = "checkpoints/clf_default.ckpt"
 TABLDM_REVISION = "712e5635be9fd8728084cd5ae105ddecb31dc03c"
+PRIOR_ALPHAS = (0.0, 0.25, 0.5, 0.75, 1.0)
 
 
 def compute_metrics(y_true, y_pred, proba) -> dict:
@@ -371,11 +372,17 @@ def make_tabldm(cfg: Config) -> TabLDMClassifier:
     )
 
 
+def prior_correct(proba: np.ndarray, prior: np.ndarray, alpha: float) -> np.ndarray:
+    """Делит вероятности на приоры в степени alpha и нормирует строки к сумме 1."""
+    p = proba / prior**alpha
+    return p / p.sum(axis=1, keepdims=True)
+
+
 def train_tabldm(cfg: Config) -> dict:
     """TabLDM: предобученная модель без обучения весов, fit только строит контекст из train."""
     seed_everything(cfg.seed)
     tracker = init_tracker(cfg)
-    train_df, _, _ = load_splits(cfg.seed)
+    train_df, val_df, _ = load_splits(cfg.seed)
     X_train, y_train = to_xy(train_df)
 
     clf = make_tabldm(cfg)
@@ -388,10 +395,33 @@ def train_tabldm(cfg: Config) -> dict:
         "n_params": sum(p.numel() for p in clf.model_.parameters()),
         "train_time_sec": train_time,
     }
+    proba_fn = clf.predict_proba
+    if cfg.tabldm_prior_correction:
+        prior = np.bincount(y_train, minlength=len(CLASSES)) / len(y_train)
+        X_val, y_val = to_xy(val_df)
+        proba_val = clf.predict_proba(X_val)  # ty: ignore[invalid-argument-type]  # DataFrame принимается, как в fit
+        f1s = [
+            f1_score(
+                y_val,
+                prior_correct(proba_val, prior, a).argmax(axis=1),
+                average="macro",
+                zero_division=0,
+            )
+            for a in PRIOR_ALPHAS
+        ]
+        for a, f1 in zip(PRIOR_ALPHAS, f1s, strict=True):
+            metrics[f"val_f1_macro_alpha_{a}"] = f1
+            print(f"alpha {a}: val F1 macro {f1:.4f}")
+        best = PRIOR_ALPHAS[
+            int(np.argmax(f1s))
+        ]  # argmax берёт первый максимум — при равенстве меньший alpha
+        metrics["tabldm_alpha"] = best
+        print(f"Выбран alpha {best} по val F1 macro")
+        proba_fn = lambda X: prior_correct(clf.predict_proba(X), prior, best)  # noqa: E731
     return finish_run(
         cfg,
         tracker,
-        clf.predict_proba,
+        proba_fn,
         [],
         metrics,
         get_device().type,
