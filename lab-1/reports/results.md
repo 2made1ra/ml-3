@@ -39,3 +39,8 @@
 | v56 | H6: enhance выкл, n_estimators 16 | TabLDM | 0.4065 | 0.3260 | runs/v56 |
 | v57 | H6: enhance выкл, n_estimators 32 | TabLDM | 0.4049 | 0.3263 | runs/v57 |
 | v58 | H7: поправка на приоры, alpha по val (выбрана 0) | TabLDM | 0.4096 | 0.3246 | runs/v58 |
+| v59–v83 | финал, 5 seeds 42–46, среднее (v59–v63) | CatBoost | 0.3191 | 0.3469 | runs/v59…v63 |
+| v59–v83 | финал, 5 seeds 42–46, среднее (v64–v68) | GANDALF | 0.2848 | 0.2953 | runs/v64…v68 |
+| v59–v83 | финал, 5 seeds 42–46, среднее (v69–v73) | FT-Transformer | 0.2713 | 0.2624 | runs/v69…v73 |
+| v59–v83 | финал, 5 seeds 42–46, среднее (v74–v78), n 8, enhance выкл | TabLDM | 0.3545 | 0.3517 | runs/v74…v78 |
+| v59–v83 | финал, 5 seeds 42–46, среднее (v79–v83), 256 × 3, lr 9e-3, wd 3e-5 | TabM | 0.3421 | 0.3294 | runs/v79…v83 |
